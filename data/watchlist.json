@@ -1,0 +1,223 @@
+[
+ {
+  "id": "w001",
+  "name": "리니지M",
+  "co": "엔씨소프트",
+  "keys": [
+   "리니지M",
+   "Lineage M",
+   "com.ncsoft.lineagem19"
+  ],
+  "order": 0
+ },
+ {
+  "id": "w002",
+  "name": "리니지W",
+  "co": "엔씨소프트",
+  "keys": [
+   "리니지W",
+   "Lineage W",
+   "com.ncsoft.lineagew"
+  ],
+  "order": 1
+ },
+ {
+  "id": "w003",
+  "name": "리니지2M",
+  "co": "엔씨소프트",
+  "keys": [
+   "리니지2M",
+   "Lineage2M",
+   "com.ncsoft.lineage2m19"
+  ],
+  "order": 2
+ },
+ {
+  "id": "w004",
+  "name": "아이온2",
+  "co": "엔씨소프트",
+  "keys": [
+   "AION2",
+   "AION 2",
+   "아이온2",
+   "com.ncsoft.aion2",
+   "3393110"
+  ],
+  "order": 3
+ },
+ {
+  "id": "w005",
+  "name": "오딘: 발할라 라이징",
+  "co": "카카오게임즈",
+  "keys": [
+   "오딘",
+   "ODIN",
+   "com.kakaogames.odin"
+  ],
+  "order": 4
+ },
+ {
+  "id": "w006",
+  "name": "나 혼자만 레벨업:어라이즈",
+  "co": "넷마블",
+  "keys": [
+   "나 혼자만 레벨업",
+   "Solo Leveling",
+   "俺だけレベルアップ",
+   "com.netmarble.sololv"
+  ],
+  "order": 5
+ },
+ {
+  "id": "w007",
+  "name": "SOL: enchant",
+  "co": "넷마블",
+  "keys": [
+   "SOL: enchant",
+   "com.netmarble.sol"
+  ],
+  "order": 6
+ },
+ {
+  "id": "w008",
+  "name": "승리의 여신: 니케",
+  "co": "시프트업",
+  "keys": [
+   "니케",
+   "NIKKE",
+   "com.proximabeta.nikke"
+  ],
+  "order": 7
+ },
+ {
+  "id": "w009",
+  "name": "메이플 키우기",
+  "co": "넥슨",
+  "keys": [
+   "메이플 키우기",
+   "MapleStory Idle",
+   "com.nexon.ma"
+  ],
+  "order": 8
+ },
+ {
+  "id": "w010",
+  "name": "마비노기 모바일",
+  "co": "넥슨",
+  "keys": [
+   "마비노기 모바일",
+   "Mabinogi Mobile",
+   "com.nexon.devcat.mm"
+  ],
+  "order": 9
+ },
+ {
+  "id": "w011",
+  "name": "FC 모바일",
+  "co": "넥슨",
+  "keys": [
+   "FC 모바일",
+   "FC Mobile",
+   "com.nexon.fmk",
+   "EA SPORTS FC™ Mobile"
+  ],
+  "order": 10
+ },
+ {
+  "id": "w012",
+  "name": "블루 아카이브",
+  "co": "넥슨게임즈",
+  "keys": [
+   "블루 아카이브",
+   "Blue Archive",
+   "ブルーアーカイブ",
+   "com.YostarJP.BlueArchive",
+   "com.nexon.bluearchive",
+   "3557620"
+  ],
+  "order": 11
+ },
+ {
+  "id": "w013",
+  "name": "PUBG / 배틀그라운드",
+  "co": "크래프톤",
+  "keys": [
+   "PUBG",
+   "배틀그라운드",
+   "com.tencent.ig",
+   "com.pubg.krmobile",
+   "578080"
+  ],
+  "order": 12
+ },
+ {
+  "id": "w014",
+  "name": "서머너즈 워",
+  "co": "컴투스",
+  "keys": [
+   "서머너즈 워",
+   "Summoners War",
+   "サマナーズウォー",
+   "com.com2us.smon"
+  ],
+  "order": 13
+ },
+ {
+  "id": "w015",
+  "name": "컴투스프로야구V26",
+  "co": "컴투스",
+  "keys": [
+   "컴투스프로야구",
+   "com.com2us.futurecpb"
+  ],
+  "order": 14
+ },
+ {
+  "id": "w016",
+  "name": "붉은사막",
+  "co": "펄어비스",
+  "keys": [
+   "붉은사막",
+   "Crimson Desert",
+   "3321460"
+  ],
+  "order": 15
+ },
+ {
+  "id": "w017",
+  "name": "쿠키런 (킹덤/키우기)",
+  "co": "데브시스터즈",
+  "keys": [
+   "쿠키런",
+   "Cookie Run",
+   "CookieRun",
+   "クッキーラン",
+   "com.devsisters"
+  ],
+  "order": 16
+ },
+ {
+  "id": "w018",
+  "name": "운빨존많겜",
+  "co": "111%",
+  "keys": [
+   "운빨존많겜",
+   "Lucky Defense",
+   "com.percent.aos.luckydefense"
+  ],
+  "order": 17
+ },
+ {
+  "id": "w019",
+  "name": "트릭컬 리바이브",
+  "co": "에피드게임즈",
+  "keys": [
+   "트릭컬",
+   "Trickcal",
+   "トリッカル",
+   "com.epidgames",
+   "com.bilibili.trickcal"
+  ],
+  "order": 18
+ }
+]

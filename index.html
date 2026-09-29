@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>게임 섹터 데스크</title>
+<meta name="description" content="Apple·Google·Steam 최고매출 순위, 관심 게임 워치리스트, 게임 산업 이벤트 캘린더">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky terminal-style top bar with section tabs; one dense column (max 1180px); tables carry the information, color is reserved for rank moves (KR market convention: up = red, down = blue) and Korean-company highlights. */
+:root{
+  --bg:#F4F5F8; --panel:#FFFFFF; --fg:#151B26; --fg2:#4B5565; --muted:#8A94A6; --line:#DCE1EA; --line2:#EEF1F6;
+  --accent:#5B4BC4; --accent-soft:#ECE9F9; --kr:#FFF4DE; --kr-ink:#7A4B00;
+  --up:#C8102E; --up-soft:#FBE7EA; --down:#1A5FD6; --down-soft:#E3ECFB; --new:#0F7B5F; --new-soft:#E1F3EC;
+  --warn:#8A5A00; --warn-soft:#FFF1D6;
+  --font:"IBM Plex Sans KR","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0F1319; --panel:#171C25; --fg:#E7EAF0; --fg2:#B4BCCB; --muted:#7C8698; --line:#2A3140; --line2:#1F2531;
+  --accent:#A99BFF; --accent-soft:#2A2650; --kr:#3A2E12; --kr-ink:#F3C56B;
+  --up:#FF5C73; --up-soft:#3D1A22; --down:#6FA3FF; --down-soft:#182742; --new:#4FD1A5; --new-soft:#123328;
+  --warn:#F3C56B; --warn-soft:#3A2E12; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F1319; --panel:#171C25; --fg:#E7EAF0; --fg2:#B4BCCB; --muted:#7C8698; --line:#2A3140; --line2:#1F2531;
+  --accent:#A99BFF; --accent-soft:#2A2650; --kr:#3A2E12; --kr-ink:#F3C56B;
+  --up:#FF5C73; --up-soft:#3D1A22; --down:#6FA3FF; --down-soft:#182742; --new:#4FD1A5; --new-soft:#123328;
+  --warn:#F3C56B; --warn-soft:#3A2E12; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.45;margin:0}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line)}
+.top .in{max-width:1180px;margin:0 auto;padding-inline:16px;display:flex;align-items:center;gap:16px;min-height:52px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand h1{font-size:16px;font-weight:700;margin:0;letter-spacing:-.01em;white-space:nowrap}
+.brand .clock{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.tabs{display:flex;gap:2px;margin-left:auto}
+.tabs button{border:0;background:none;padding:14px 12px;font-weight:500;color:var(--fg2);border-bottom:2px solid transparent;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tabs button:focus-visible,.chip:focus-visible,.btn:focus-visible,.icon:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+section.view{padding-top:20px}
+.sec-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.sec-head h2{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.sec-head .sub{color:var(--muted);font-size:12px}
+.sec-head .spacer{flex:1}
+
+/* notice */
+.notice{background:var(--warn-soft);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);padding:10px 12px;border-radius:6px;font-size:13px;margin:16px 0 0}
+
+/* chips */
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;font-size:12.5px;cursor:pointer;color:var(--fg2)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip .n{font-family:var(--mono);color:var(--muted);margin-left:4px;font-size:11px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.small{padding:3px 8px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:default}
+.icon{border:0;background:none;cursor:pointer;color:var(--muted);padding:2px 6px;border-radius:4px;font-size:13px}
+.icon:hover{background:var(--line2);color:var(--fg)}
+
+/* panels & tables */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);background:var(--panel);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+td.rank{font-family:var(--mono);font-weight:600;color:var(--fg2);width:44px;text-align:right}
+.name{font-weight:500}
+.pub{color:var(--muted);font-size:12px}
+tr.kr td{background:var(--kr)}
+tr.kr .pub{color:var(--kr-ink)}
+.kr-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--kr-ink);border:1px solid var(--kr-ink);border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:1px}
+.delta{font-family:var(--mono);font-size:12px;font-weight:600;white-space:nowrap}
+.delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:var(--muted)} .delta.new{color:var(--new)}
+.cell{display:flex;align-items:baseline;justify-content:flex-end;gap:6px}
+.cell .r{font-family:var(--mono);font-weight:600;min-width:2ch;text-align:right}
+.cell .r.none{color:var(--line);font-weight:400}
+.stamp{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* watchlist */
+.wl-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.wl-add{display:none;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:12px;border-top:1px solid var(--line);background:var(--bg)}
+.wl-add.open{display:flex}
+.field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--fg2);min-width:0}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel);min-width:0}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.help{font-size:12px;color:var(--muted);margin:8px 0 0}
+
+/* rank grid */
+.rank-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.rank-card .head{display:flex;align-items:baseline;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.rank-card .head h3{margin:0;font-size:14px;font-weight:700}
+.rank-card .head .stamp{margin-left:auto}
+.empty{padding:28px 16px;color:var(--muted);text-align:center;font-size:13px}
+
+/* calendar */
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px}
+.day{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:74px;min-width:0}
+.day.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.day .d{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+.day .d b{color:var(--fg)}
+.day .ev{font-size:11.5px;line-height:1.3;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day .ev::before{content:"";display:inline-block;width:6px;height:6px;border-radius:2px;margin-right:5px;background:var(--c);vertical-align:1px}
+.cat{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:3px;color:#fff;background:var(--c);white-space:nowrap}
+.month{margin-top:18px}
+.month h3{font-size:13px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px;font-family:var(--mono)}
+td.date{font-family:var(--mono);white-space:nowrap;width:110px}
+td.date .dow{color:var(--muted);font-size:11px;margin-left:4px}
+.dday{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.dday.soon{color:var(--up);font-weight:600}
+.conf{font-size:11px;color:var(--muted)}
+.conf.est{color:var(--warn)}
+td.note{color:var(--fg2);font-size:12.5px;max-width:420px}
+tr.past td{opacity:.55}
+.ev-form{display:none;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:12px;border-bottom:1px solid var(--line);background:var(--bg)}
+.ev-form.open{display:flex}
+.ev-form .field.grow{flex:1 1 220px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media (max-width:640px){
+  .week-strip{grid-template-columns:repeat(4,1fr)}
+  .tabs{margin-left:0;width:100%;overflow-x:auto}
+  .tabs button{padding:10px 10px}
+  td.note{max-width:220px}
+}
+[hidden]{display:none!important}
+.foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:grid;gap:6px;max-width:80ch}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="brand"><h1>게임 섹터 데스크</h1><span class="clock" id="clock"></span></div>
+  <nav class="tabs" role="tablist" aria-label="섹션">
+    <button role="tab" data-tab="watch" aria-selected="true">워치리스트</button>
+    <button role="tab" data-tab="rank" aria-selected="false">매출순위</button>
+    <button role="tab" data-tab="cal" aria-selected="false">이벤트 캘린더</button>
+  </nav>
+</div></header>
+
+<div class="wrap">
+<div class="notice" id="notice" hidden></div>
+
+<section class="view" id="view-watch">
+  <div class="sec-head"><h2>관심 게임 순위</h2><span class="sub">스토어별 최고매출 순위 · 변동은 전일 스냅샷 대비 (▲상승=빨강, ▼하락=파랑, N=신규 진입)</span></div>
+  <div class="wl-tools">
+    <button class="btn" id="wl-copy">텔레그램용 복사</button>
+    <span class="help" id="wl-stamp"></span>
+  </div>
+  <div class="panel"><div class="tablewrap"><table id="wl-table">
+    <thead><tr>
+      <th>게임</th><th>회사</th>
+      <th class="num">Apple KR</th><th class="num">Apple JP</th><th class="num">Apple US</th><th class="num">Apple CN</th>
+      <th class="num">Google KR</th><th class="num">Google JP</th><th class="num">Google US</th>
+      <th class="num">Steam KR</th><th class="num">Steam Global</th>
+    </tr></thead>
+    <tbody id="wl-body"><tr><td colspan="11" class="empty">데이터를 불러오는 중…</td></tr></tbody>
+  </table></div></div>
+  <p class="help">순위 범위: Apple·Google 최고매출 게임 Top 50, Steam 주간 최다판매(매출 기준) Top 50. 범위 밖이면 "–". Apple은 페이지를 열 때 실시간 피드로 갱신, Google·Steam은 매시 자동 수집분.</p>
+</section>
+
+<section class="view" id="view-rank" hidden>
+  <div class="sec-head"><h2>스토어 최고매출 순위</h2><span class="sub">국내 상장사 타이틀은 노란 배경 · 변동은 전일 대비</span><span class="spacer"></span>
+    <label class="chip" style="cursor:pointer"><input type="checkbox" id="rank-kronly" style="vertical-align:-1px;margin:0 5px 0 0">국내사만</label></div>
+  <div class="chips" id="rank-chips" style="margin-bottom:12px"></div>
+  <div class="rank-grid" id="rank-grid"></div>
+</section>
+
+<section class="view" id="view-cal" hidden>
+  <div class="sec-head"><h2>이벤트 캘린더</h2><span class="sub">신작 출시 · 실적 발표 · 행사 · 규제 · e스포츠</span></div>
+  <div class="week-strip" id="week-strip"></div>
+  <div class="chips" id="cal-chips" style="margin-bottom:12px"></div>
+  <div class="panel"><div id="cal-list"><div class="empty">일정을 불러오는 중…</div></div></div>
+  <p class="help">"예상"으로 표시된 실적발표일은 전년 발표 패턴 기반 추정치이며 확정 공시 시 갱신됩니다.</p>
+</section>
+
+<footer class="foot">
+  <div>자료: Apple App Store 공식 RSS 피드(최고 매출·게임), Google Play 최고 매출 차트(휴대전화), Steam 주간 최다판매 차트(매출 기준). 스토어 순위는 매출 규모가 아닌 순위 지표이며, 스토어 정책·시간대에 따라 변동될 수 있습니다.</div>
+  <div>본 페이지는 정보 제공 목적이며 특정 종목의 매수·매도 권유가 아닙니다. 데이터 기준 시각: <span id="foot-stamp"></span></div>
+</footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const KST={timeZone:'Asia/Seoul'};
+function todayKST(){return new Intl.DateTimeFormat('en-CA',{...KST,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function fmtStamp(iso){if(!iso)return '미갱신';const d=new Date(iso);if(isNaN(d))return iso;return new Intl.DateTimeFormat('ko-KR',{...KST,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d).replace(/\. /g,'/').replace('.','')+' KST';}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800);}
+(function clock(){const el=$('#clock');const tick=()=>{el.textContent=new Intl.DateTimeFormat('ko-KR',{...KST,year:'numeric',month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date())+' KST';};tick();setInterval(tick,30000);})();
+
+const STORES=[
+  {id:'apple_kr',label:'App Store 한국',unit:'Top Grossing · 게임',cc:'kr'},
+  {id:'apple_jp',label:'App Store 일본',unit:'Top Grossing · 게임',cc:'jp'},
+  {id:'apple_us',label:'App Store 미국',unit:'Top Grossing · 게임',cc:'us'},
+  {id:'apple_cn',label:'App Store 중국',unit:'Top Grossing · 게임',cc:'cn'},
+  {id:'gplay_kr',label:'Google Play 한국',unit:'최고 매출 · 게임'},
+  {id:'gplay_jp',label:'Google Play 일본',unit:'売上トップ · ゲーム'},
+  {id:'gplay_us',label:'Google Play 미국',unit:'Top grossing · Games'},
+  {id:'steam_kr',label:'Steam 한국',unit:'주간 최다판매(매출)'},
+  {id:'steam_global',label:'Steam 글로벌',unit:'주간 최다판매(매출)'},
+];
+const CATS={launch:{l:'신작',c:'#5B4BC4'},earnings:{l:'실적',c:'#C8102E'},event:{l:'행사',c:'#0F7B5F'},regulation:{l:'규제',c:'#8A5A00'},esports:{l:'e스포츠',c:'#1A5FD6'},other:{l:'기타',c:'#6B7280'}};
+const KR_PUB=/nexon|넥슨|netmarble|넷마블|ncsoft|nc corp|엔씨|kakao ?games|카카오게임즈|krafton|크래프톤|pubg|com2us|컴투스|wemade|위메이드|pearl ?abyss|펄어비스|shift ?up|시프트업|neowiz|네오위즈|smilegate|스마일게이트|\bnhn\b|devsisters|데브시스터즈|gravity|그라비티|joycity|조이시티|webzen|웹젠|111%|percent|line ?games|라인게임즈|hybe ?im|하이브im|epid ?games|에피드|nikke|니케|blue ?archive|블루 ?아카이브|ブルーアーカイブ|maplestory|메이플|lineage|리니지|aion|아이온|odin|오딘|바람의나라|dave the diver|데이브 더 다이버|crimson desert|붉은사막|black desert|검은사막|battlegrounds|배틀그라운드|inzoi|인조이|the first descendant|퍼스트 디센던트|eternal return|이터널 리턴|stellar blade|스텔라 블레이드|summoners war|서머너즈|cookie ?run|쿠키런|クッキーラン|solo leveling|나 혼자만|俺だけ|mabinogi|마비노기|dungeon ?&? ?fighter|던전앤파이터|arc raiders|lost ark|로스트아크|trickcal|트릭컬|lucky defense|운빨존많겜|kartrider|카트라이더|blade ?& ?soul|seven knights|세븐나이츠|night crows|나이트 크로우|mir4|미르4|archeage|아키에이지|goddess of victory/i;
+function isKR(it){return KR_PUB.test([it.n,it.p,it.id,it.bid].filter(Boolean).join(' '));}
+
+const charts={}; let watch=[], events=[]; let rankFilter='apple', calFilter='all';
+
+function showTab(t){$$('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$$('section.view').forEach(s=>s.hidden=(s.id!=='view-'+t));try{localStorage.setItem('tab',t)}catch(e){}}
+$$('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+(function(){let t='watch';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(watch|rank|cal)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
+
+function deltaHTML(d,hasPrev){
+  if(!hasPrev)return '';
+  if(d==null)return '<span class="delta new">N</span>';
+  if(d===0)return '<span class="delta flat">–</span>';
+  return d>0?`<span class="delta up">▲${d}</span>`:`<span class="delta down">▼${-d}</span>`;
+}
+function matchItem(it,keys){const hay=[it.n,it.id,it.bid].filter(Boolean).map(s=>String(s).toLowerCase());return keys.some(k=>{k=k.toLowerCase();return hay.some(h=>h===k||h.includes(k));});}
+
+function renderWatch(){
+  const body=$('#wl-body');
+  if(!watch.length){body.innerHTML='<tr><td colspan="11" class="empty">워치리스트가 비어 있습니다.</td></tr>';return;}
+  body.innerHTML=watch.map(w=>{
+    const cells=STORES.map(s=>{const doc=charts[s.id];if(!doc||!doc.items)return '<td class="num"><span class="cell"><span class="r none">·</span></span></td>';
+      const hit=doc.items.find(it=>matchItem(it,w.keys));if(!hit)return '<td class="num"><span class="cell"><span class="r none">–</span></span></td>';
+      return `<td class="num"><span class="cell"><span class="r">${hit.r}</span>${deltaHTML(hit.d,!!doc.prevDate)}</span></td>`;}).join('');
+    return `<tr><td class="name">${esc(w.name)}</td><td class="pub">${esc(w.co||'')}</td>${cells}</tr>`;}).join('');
+  const stamps=STORES.map(s=>charts[s.id]?.fetchedAt).filter(Boolean).sort();
+  $('#wl-stamp').textContent=stamps.length?`최종 수집 ${fmtStamp(stamps[stamps.length-1])}`:'';
+}
+$('#wl-copy').addEventListener('click',()=>{
+  const lines=[`[게임 매출순위 워치] ${todayKST().replace(/-/g,'.')}`,'(Apple KR|JP|US|CN / Google KR|JP|US / Steam KR|Global · 괄호=전일비)'];
+  watch.forEach(w=>{const parts=STORES.map(s=>{const doc=charts[s.id];if(!doc||!doc.items)return '·';const hit=doc.items.find(it=>matchItem(it,w.keys));if(!hit)return '–';let d='';if(doc.prevDate){d=hit.d==null?'(N)':(hit.d===0?'(-)':(hit.d>0?`(+${hit.d})`:`(${hit.d})`));}return hit.r+d;});
+    lines.push(`・${w.name}${w.co?' ('+w.co+')':''} → ${parts.slice(0,4).join('|')} / ${parts.slice(4,7).join('|')} / ${parts.slice(7).join('|')}`);});
+  const txt=lines.join('\n'); const done=()=>toast('복사됨');
+  const fallback=()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('복사 실패');}ta.remove();};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(fallback);else fallback();
+});
+
+function renderRankChips(){
+  const groups=[{k:'apple',l:'Apple'},{k:'gplay',l:'Google Play'},{k:'steam',l:'Steam'}];
+  $('#rank-chips').innerHTML=groups.map(g=>`<button class="chip" data-g="${g.k}" aria-pressed="${rankFilter===g.k}">${g.l}</button>`).join('');
+  $$('#rank-chips .chip').forEach(b=>b.addEventListener('click',()=>{rankFilter=b.dataset.g;renderRankChips();renderRank();}));
+}
+function renderRank(){
+  const krOnly=$('#rank-kronly').checked;
+  $('#rank-grid').innerHTML=STORES.filter(s=>s.id.startsWith(rankFilter)).map(s=>{
+    const doc=charts[s.id]; let body;
+    if(!doc||!doc.items||!doc.items.length){body='<div class="empty">아직 수집된 데이터가 없습니다.</div>';}
+    else{const rows=doc.items.filter(it=>!krOnly||isKR(it)).map(it=>{const kr=isKR(it);return `<tr class="${kr?'kr':''}"><td class="rank">${it.r}</td><td><span class="name">${esc(it.n)}</span>${kr?'<span class="kr-tag">KR</span>':''}<div class="pub">${esc(it.p||'')}</div></td><td class="num">${deltaHTML(it.d,!!doc.prevDate)}</td></tr>`;}).join('');
+      body=`<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>타이틀 / 퍼블리셔</th><th class="num">전일비</th></tr></thead><tbody>${rows||'<tr><td colspan="3" class="empty">해당 없음</td></tr>'}</tbody></table></div>`;}
+    return `<div class="panel rank-card"><div class="head"><h3>${s.label}</h3><span class="pub">${s.unit}${doc?.live?' · 실시간':''}</span><span class="stamp" title="수집 시각">${doc?fmtStamp(doc.fetchedAt):'미갱신'}</span></div>${body}</div>`;}).join('');
+}
+$('#rank-kronly').addEventListener('change',renderRank);
+renderRankChips();
+
+const DOW=['일','월','화','수','목','금','토'];
+function dstr(d){return d.toISOString().slice(0,10);}
+function addDays(s,n){const d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return dstr(d);}
+function dowOf(s){return DOW[new Date(s+'T00:00:00Z').getUTCDay()];}
+function ddays(s){const t=new Date(todayKST()+'T00:00:00Z'),d=new Date(s+'T00:00:00Z');return Math.round((d-t)/86400000);}
+function renderCalChips(){
+  const counts={all:events.length};events.forEach(e=>counts[e.cat]=(counts[e.cat]||0)+1);
+  const opts=[['all','전체'],...Object.entries(CATS).map(([k,v])=>[k,v.l])];
+  $('#cal-chips').innerHTML=opts.map(([k,l])=>`<button class="chip" data-c="${k}" aria-pressed="${calFilter===k}">${l}<span class="n">${counts[k]||0}</span></button>`).join('');
+  $$('#cal-chips .chip').forEach(b=>b.addEventListener('click',()=>{calFilter=b.dataset.c;renderCalChips();renderCal();}));
+}
+function renderWeek(){
+  const t=todayKST();const days=[];for(let i=0;i<7;i++)days.push(addDays(t,i));
+  $('#week-strip').innerHTML=days.map(d=>{const evs=events.filter(e=>e.date<=d&&(e.end||e.date)>=d).slice(0,4);
+    return `<div class="day ${d===t?'today':''}"><div class="d"><b>${d.slice(5).replace('-','/')}</b><span>${dowOf(d)}</span></div>${evs.map(e=>`<div class="ev" style="--c:${CATS[e.cat]?.c||'#888'}" title="${esc(e.title)}">${esc(e.title)}</div>`).join('')}${evs.length?'':'<div class="ev" style="--c:transparent;color:var(--line)">—</div>'}</div>`;}).join('');
+}
+function renderCal(){
+  const t=todayKST();
+  const list=events.filter(e=>calFilter==='all'||e.cat===calFilter).filter(e=>(e.end||e.date)>=addDays(t,-7)).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title));
+  if(!list.length){$('#cal-list').innerHTML='<div class="empty">표시할 일정이 없습니다.</div>';return;}
+  const byMonth={};list.forEach(e=>{const m=e.date.slice(0,7);(byMonth[m]=byMonth[m]||[]).push(e);});
+  $('#cal-list').innerHTML=Object.entries(byMonth).map(([m,evs])=>`<div class="month"><h3 style="padding:12px 12px 0">${m.replace('-','.')}</h3><div class="tablewrap"><table>
+    <thead><tr><th>날짜</th><th>D-day</th><th>분류</th><th>일정</th><th>회사/주최</th><th>메모</th><th>확정</th></tr></thead><tbody>
+    ${evs.map(e=>{const dd=ddays(e.date);const past=(e.end||e.date)<t;const ddTxt=dd===0?'D-DAY':dd>0?`D-${dd}`:`D+${-dd}`;
+      return `<tr class="${past?'past':''}"><td class="date">${e.date.slice(5).replace('-','/')}<span class="dow">${dowOf(e.date)}</span>${e.end&&e.end!==e.date?`<br>~${e.end.slice(5).replace('-','/')}`:''}</td>
+      <td><span class="dday ${dd>=0&&dd<=7?'soon':''}">${ddTxt}</span></td><td><span class="cat" style="--c:${CATS[e.cat]?.c||'#888'}">${CATS[e.cat]?.l||e.cat}</span></td>
+      <td class="name">${esc(e.title)}</td><td class="pub">${esc(e.org||'')}</td><td class="note">${esc(e.note||'')}</td><td><span class="conf ${e.conf==='예상'?'est':''}">${esc(e.conf||'')}</span></td></tr>`;}).join('')}
+    </tbody></table></div></div>`).join('');
+}
+
+/* ---------- data loading ---------- */
+async function getJSON(u){const r=await fetch(u+'?t='+Math.floor(Date.now()/60000),{cache:'no-store'});if(!r.ok)throw new Error(u+' '+r.status);return r.json();}
+async function appleLive(s){
+  // Live Apple feed; delta vs the latest earlier day in the committed history file.
+  const cc=s.cc; const url=`https://itunes.apple.com/${cc}/rss/topgrossingapplications/limit=50/genre=6014/json`;
+  const j=await (await fetch(url)).json();
+  const items=(j.feed?.entry||[]).map((e,i)=>({r:i+1,n:e['im:name']?.label,p:e['im:artist']?.label,id:e.id?.attributes?.['im:id'],bid:e.id?.attributes?.['im:bundleId']}));
+  if(items.length<20)throw new Error('short');
+  let prevDate=null; try{const h=await getJSON(`data/history/${s.id}.json`);const t=todayKST();const dates=Object.keys(h).filter(d=>d<t).sort();prevDate=dates[dates.length-1]||null;if(prevDate){const pm=new Map(h[prevDate].map(([r,id])=>[String(id),r]));items.forEach(it=>{it.d=pm.has(String(it.id))?pm.get(String(it.id))-it.r:null;});}}catch(e){}
+  return {store:'apple',cc:cc.toUpperCase(),fetchedAt:new Date().toISOString(),items,prevDate,live:true};
+}
+function renderAll(){renderWatch();renderRank();}
+(async()=>{
+  const notice=$('#notice');
+  try{
+    const [c,w,e]=await Promise.all([getJSON('data/charts.json'),getJSON('data/watchlist.json'),getJSON('data/events.json')]);
+    Object.entries(c).forEach(([k,v])=>{if(!k.startsWith('_'))charts[k]=v;});
+    watch=w; events=e;
+    $('#foot-stamp').textContent=fmtStamp(c._meta?.generatedAt);
+    if(c._meta?.failures?.length){notice.hidden=false;notice.textContent='최근 자동 수집에서 일부 소스가 실패했습니다: '+c._meta.failures.map(f=>f.split(':')[0]).join(', ')+' (직전 성공분 표시)';}
+  }catch(err){notice.hidden=false;notice.textContent='데이터 파일을 불러오지 못했습니다: '+err.message;}
+  renderAll();renderCalChips();renderWeek();renderCal();
+  // Apple live refresh (does not block first paint)
+  await Promise.all(STORES.filter(s=>s.id.startsWith('apple')).map(async s=>{try{charts[s.id]=await appleLive(s);}catch(e){}}));
+  renderAll();
+})();
+})();
+</script>
+
+</body>
+</html>
