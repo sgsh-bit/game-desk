@@ -28,3 +28,5 @@
 - 워치리스트 "내 게임 추가": 보는 사람 브라우저(localStorage)에만 저장
 - 종목 카드 탭: 주가·수급·밸류·실적·뉴스·공시·리포트·관련 게임 순위를 종목별 한 화면 (수급/밸류/실적 표의 종목명 클릭)
 - 실적 탭: 요약(발표 임박순) + 종목별 분기/연간 재무 상세(매출·OP·OPM·순이익·EPS·ROE·DPS) + 차트; `data/history/quarters.json`에 확정 분기 누적(분기 YoY용)
+- 분기 백필: `scripts/collect-dart-fin.mjs` — OpenDART 재무제표 API(연결, 1Q/반기/3Q/사업보고서에서 분기 분해) → `data/history/quarters.json`. 네이버(FnGuide)와 겹치는 분기는 네이버 값 우선
+- 당사 추정치: `data/estimates.json` (code → "YYYY.MM" 분기 / "YYYY" 연간 → {rev, op, np} 억원). 사이트 실적 탭 "당사 추정치 입력" → "JSON 복사" 결과를 이 파일에 붙여넣고 커밋하면 전체 공개
