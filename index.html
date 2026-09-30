@@ -233,6 +233,13 @@ tr.sel td{background:var(--accent-soft)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .kpi .l{font-size:11px;color:var(--muted)}.kpi .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}.kpi .d{font-size:11.5px;margin-top:1px}
+
+#fin-table tr.mine td,#co-fin tr.mine td{color:var(--accent);font-weight:600}
+#co-fin th{text-align:right}#co-fin th:first-child{text-align:left}#co-fin td.num.est,#co-fin th.est{color:var(--muted);background:var(--line2)}#co-fin tr.rate td{font-size:12px;color:var(--fg2)}
+.est-grid{display:grid;grid-template-columns:auto repeat(3,minmax(90px,1fr));gap:6px 10px;align-items:center;max-width:560px}
+.est-grid input{width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--panel);font-family:var(--mono);font-size:12.5px;text-align:right}
+.est-grid .h{font-size:11px;color:var(--muted);text-align:right;letter-spacing:.03em}
+.est-grid .p{font-family:var(--mono);font-size:12px;white-space:nowrap}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:grid;gap:6px;max-width:80ch}
 </style>
 </head>
@@ -344,14 +351,20 @@ tr.sel td{background:var(--accent-soft)}
   <div class="wl-tools"><button class="btn" id="earn-copy">텔레그램용 복사</button><span class="help">다음 분기 컨센서스와 실적발표 예정일을 한 번에 봅니다.</span></div>
   <div class="panel"><div class="tablewrap"><table id="earn-table">
     <thead><tr><th>종목</th><th>발표 예정</th>
-      <th class="num" colspan="5">최근 확정 분기</th><th class="num" colspan="6">다음 분기 컨센서스</th><th class="num" colspan="3">연간 컨센서스</th><th>분기 OP</th></tr>
-      <tr class="sub-h"><th></th><th></th><th class="num">분기</th><th class="num">매출</th><th class="num">영업이익</th><th class="num">OPM</th><th class="num">순이익</th><th class="num">분기</th><th class="num">매출E</th><th class="num">영업이익E</th><th class="num">OPM E</th><th class="num">1M 변화</th><th class="num">OP YoY</th><th class="num">전년 OP</th><th class="num">올해 OP E</th><th class="num">OP 성장</th><th></th></tr></thead>
-    <tbody id="earn-body"><tr><td colspan="17" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+      <th class="num" colspan="5">최근 확정 분기</th><th class="num" colspan="6">다음 분기 컨센서스</th><th class="num" colspan="2">당사 추정</th><th class="num" colspan="3">연간 컨센서스</th><th>분기 OP</th></tr>
+      <tr class="sub-h"><th></th><th></th><th class="num">분기</th><th class="num">매출</th><th class="num">영업이익</th><th class="num">OPM</th><th class="num">순이익</th><th class="num">분기</th><th class="num">매출E</th><th class="num">영업이익E</th><th class="num">OPM E</th><th class="num">1M 변화</th><th class="num">OP YoY</th><th class="num">OP 당사</th><th class="num">vs 컨센</th><th class="num">전년 OP</th><th class="num">올해 OP E</th><th class="num">OP 성장</th><th></th></tr></thead>
+    <tbody id="earn-body"><tr><td colspan="19" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
   <div class="sec-head" style="margin-top:22px"><h2 style="font-size:16px">종목별 재무 상세</h2><span class="sub">분기 5개 + 컨센서스 / 연간 3개 + 컨센서스 · 억원</span><span class="spacer"></span>
     <div class="chips"><button class="chip" id="fin-q" aria-pressed="true">분기</button><button class="chip" id="fin-a" aria-pressed="false">연간</button></div></div>
   <div class="chips" id="fin-chips" style="margin-bottom:12px"></div>
   <div class="fin-grid"><div class="panel" style="padding:12px" id="fin-chart"></div><div class="panel"><div class="tablewrap"><table id="fin-table"><tbody><tr><td class="empty">종목을 선택하세요</td></tr></tbody></table></div></div></div>
-  <p class="help">1M 변화 = 다음 분기 영업이익 컨센서스의 30일 전 대비 변화(같은 분기 기준, 일별 스냅샷 축적 후 표시). E = 컨센서스 추정치(네이버증권·FnGuide). 막대 차트는 최근 분기 영업이익, 옅은 막대가 추정치. 발표 예정일은 이벤트 캘린더에서 연결되며 "예상"일 수 있습니다.</p>
+  <div class="panel" style="margin-top:14px;padding:12px" id="est-panel">
+    <div class="sec-head" style="margin-bottom:6px"><h3 style="margin:0;font-size:14px">당사 추정치 입력 <span class="pub" style="font-weight:400" id="est-meta"></span></h3><span class="spacer"></span>
+      <button class="btn small" id="est-toggle">입력 열기</button><button class="btn small" id="est-copy">JSON 복사</button><button class="btn small" id="est-clear">내 입력 초기화</button></div>
+    <div class="help">선택한 종목의 분기/연간 추정치(억원)를 입력하면 표와 종목 카드에 컨센서스 옆 보라색으로 표시되고 "vs 컨센"이 계산됩니다. 입력값은 이 브라우저에 즉시 저장되며, "JSON 복사" 결과를 <code>data/estimates.json</code>에 반영하면 모든 고객 화면에 공개됩니다.</div>
+    <div id="est-form" hidden style="margin-top:10px"></div>
+  </div>
+  <p class="help">당사 추정 = 현대차증권 추정치(추정치 입력에서 등록, 보라색). vs 컨센 = 당사 영업이익 추정 ÷ 컨센서스 − 1. 1M 변화 = 다음 분기 영업이익 컨센서스의 30일 전 대비 변화(같은 분기 기준, 일별 스냅샷 축적 후 표시). E = 컨센서스 추정치(네이버증권·FnGuide). 막대 차트는 최근 분기 영업이익, 옅은 막대가 추정치. 발표 예정일은 이벤트 캘린더에서 연결되며 "예상"일 수 있습니다.</p>
 </section>
 
 <section class="view" id="view-dart" hidden>
@@ -769,13 +782,14 @@ function earnRows(){
 function bars(Q){const v=Q.op;const n=v.length;if(!n)return '';const w=120,h=30,bw=Math.min(12,(w-4)/n-3);const mx=Math.max(...v.map(x=>Math.abs(x||0)),1);const zero=v.some(x=>x<0)?h/2:h-2;
   return `<svg class="bars" viewBox="0 0 ${w} ${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${zero}" y2="${zero}" stroke="var(--line)"/>${v.map((x,i)=>{if(x==null)return '';const bh=Math.abs(x)/mx*(zero-2);const X=2+i*((w-4)/n);const y=x>=0?zero-bh:zero;return `<rect x="${X}" y="${y}" width="${bw}" height="${Math.max(bh,1)}" rx="2" fill="${x>=0?'var(--accent)':'var(--down)'}" opacity="${Q.periods[i].est?.35:1}"><title>${Q.periods[i].label}${Q.periods[i].est?'E':''} ${fmt.n(x)}억</title></rect>`;}).join('')}</svg>`;}
 function renderEarn(){
-  const body=$('#earn-body'); if(!earn||!Object.keys(earn.companies).length){body.innerHTML='<tr><td colspan="17" class="empty">실적 데이터가 아직 수집되지 않았습니다 (평일 18:10 KST).</td></tr>';return;}
+  const body=$('#earn-body'); if(!earn||!Object.keys(earn.companies).length){body.innerHTML='<tr><td colspan="19" class="empty">실적 데이터가 아직 수집되지 않았습니다 (평일 18:10 KST).</td></tr>';return;}
   $('#earn-stamp').textContent='수집 '+fmtStamp(earn.generatedAt);
   const rows=earnRows().sort((a,b)=>(a.ev?.date||'9999').localeCompare(b.ev?.date||'9999'));
   body.innerHTML=rows.map(r=>`<tr><td class="name"><span class="wl-name" data-cocard="${r.code}">${esc(r.name)}</span><div class="pub">${r.code} · ${esc(r.sector)}</div></td>
     <td class="date">${r.ev?`${r.ev.date.slice(5).replace('-','/')}<span class="dow">${dowOf(r.ev.date)}</span><div class="conf ${r.ev.conf==='예상'?'est':''}">${esc(r.ev.conf||'')}</div>`:'<span class="pub">–</span>'}</td>
     <td class="num pub">${esc(r.aLab)}</td><td class="num">${eok(r.aRev)}</td><td class="num">${eok(r.aOp)}${r.aOpY!=null?`<div class="delta">${gCell(r.aOpY)}</div>`:''}</td><td class="num">${r.aOpm!=null?r.aOpm.toFixed(1)+'%':'–'}</td><td class="num">${eok(r.aNp)}</td>
     <td class="num pub">${esc(r.eLab)}${r.nextE>=0?'E':''}</td><td class="num">${eok(r.eRev)}</td><td class="num"><b>${eok(r.eOp)}</b></td><td class="num">${r.eOpm!=null?r.eOpm.toFixed(1)+'%':'–'}</td><td class="num">${(()=>{const c=opChange(r.code,r.eOp);return c==null?'<span class="pub">–</span>':gCell(c);})()}</td><td class="num">${gCell(r.eOpY)}</td>
+    ${(()=>{const m=myEst(r.code,r.eLab);const d=m?.op!=null&&r.eOp?(m.op/r.eOp-1)*100:null;return `<td class="num">${m?.op!=null?`<b style="color:var(--accent)">${eok(m.op)}</b>`:'<span class="pub">–</span>'}</td><td class="num">${d!=null?`<span class="${cls(d)}">${fmt.pct(d,1)}</span>`:'<span class="pub">–</span>'}</td>`;})()}
     <td class="num">${eok(r.nOp)}</td><td class="num"><b>${eok(r.yOp)}</b></td><td class="num">${gCell(r.g)}</td><td>${bars(r.Q)}</td></tr>`).join('');
 }
 $('#earn-copy').addEventListener('click',()=>{
@@ -802,6 +816,7 @@ function renderDart(){
   body.innerHTML=list.map(x=>`<tr><td class="date">${x.date.slice(5).replace('-','/')}<span class="dow">${dowOf(x.date)}</span></td><td class="name">${esc(x.name)}</td><td><span class="tagc" style="--c:${TAGC[x.tag]||'#9AA3B2'}">${esc(x.tag)}</span></td><td><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${esc(x.rcp)}" target="_blank" rel="noopener">${esc(x.title)}</a>${x.rm?` <span class="stamp">${esc(x.rm)}</span>`:''}</td><td class="pub">${esc(x.filer)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">해당 공시 없음</td></tr>';
 }
 (async()=>{
+  try{estPub=await getJSON('data/estimates.json');estPub.estimates=estPub.estimates||{};}catch(e){}
   try{earn=await getJSON('data/earnings.json');}catch(e){}
   try{consHist=await getJSON('data/history/consensus.json');}catch(e){}
   try{dart=await getJSON('data/dart.json');}catch(e){}
@@ -880,10 +895,12 @@ function finTable(c){
   const yoyRow=(name,arr)=>`<tr class="rate"><td class="pub" style="padding-left:18px">${name}</td>${P.map((p,i)=>{const j=yoyIdx(i);const g=j>=0?growth(arr?.[i],arr?.[j]):null;return `<td class="num ${p.est?'est':''}">${g==null?'–':gCell(g)}</td>`;}).join('')}</tr>`;
   const money=v=>v==null?'–':fmt.n(v); const pct=v=>v==null?'–':v.toFixed(1)+'%'; const won=v=>v==null?'–':fmt.n(v)+'원'; const x=v=>v==null?'–':v.toFixed(1)+'x';
   const opm=P.map((p,i)=>opmOf(Q,i)); const npm=P.map((p,i)=>Q.npm?.[i]!=null?Q.npm[i]:(Q.rev?.[i]&&Q.np?.[i]!=null?Q.np[i]/Q.rev[i]*100:null));
+  const mine=P.map(p=>myEst(c.code||finCode,finMode==='quarter'?p.label:p.label.slice(0,4)));const hasMine=mine.some(Boolean);
+  const mineRow=(name,k)=>hasMine?`<tr class="mine"><td class="name" style="white-space:nowrap;padding-left:18px">└ 당사 ${name}</td>${P.map((p,i)=>{const m=mine[i]?.[k];const base=(k==='rev'?Q.rev:k==='op'?Q.op:Q.np)?.[i];const d=m!=null&&base?(m/base-1)*100:null;return `<td class="num ${p.est?'est':''}">${m!=null?fmt.n(m)+(d!=null?`<div class="delta ${cls(d)}" style="font-weight:500">${fmt.pct(d,1)} vs 컨센</div>`:''):'–'}</td>`;}).join('')}</tr>`:'';
   return `<thead><tr><th>억원</th>${P.map(p=>`<th class="num ${p.est?'est':''}">${lab(p)}${p.est?'E':''}</th>`).join('')}</tr></thead><tbody>
-    ${row('매출액',Q.rev,money)}${yoyRow('YoY',Q.rev)}
-    ${row('영업이익',Q.op,money)}${yoyRow('YoY',Q.op)}${row('영업이익률',opm,pct,true)}
-    ${row('당기순이익',Q.np,money)}${Q.npc?.some(v=>v!=null)?row('지배주주순이익',Q.npc,money):''}${row('순이익률',npm,pct,true)}
+    ${row('매출액',Q.rev,money)}${yoyRow('YoY',Q.rev)}${mineRow('매출','rev')}
+    ${row('영업이익',Q.op,money)}${yoyRow('YoY',Q.op)}${mineRow('영업이익','op')}${row('영업이익률',opm,pct,true)}
+    ${row('당기순이익',Q.np,money)}${mineRow('순이익','np')}${Q.npc?.some(v=>v!=null)?row('지배주주순이익',Q.npc,money):''}${row('순이익률',npm,pct,true)}
     ${Q.eps?.some(v=>v!=null)?row('EPS',Q.eps,won,true):''}${finMode==='annual'&&Q.roe?.some(v=>v!=null)?row('ROE',Q.roe,pct,true):''}${finMode==='annual'&&Q.per?.some(v=>v!=null)?row('PER',Q.per,x,true):''}${finMode==='annual'&&Q.pbr?.some(v=>v!=null)?row('PBR',Q.pbr,x,true):''}${finMode==='annual'&&Q.dps?.some(v=>v!=null)?row('주당배당금',Q.dps,won,true):''}
   </tbody>`;
 }
@@ -912,9 +929,31 @@ function renderFin(){
   $('#fin-chips').innerHTML=codes.map(c=>`<button class="chip" data-f="${c}" aria-pressed="${finCode===c}">${esc(earn.companies[c].name)}</button>`).join('');
   $$('#fin-chips .chip').forEach(b=>b.addEventListener('click',()=>{finCode=b.dataset.f;renderFin();}));
   $('#fin-q').setAttribute('aria-pressed',String(finMode==='quarter'));$('#fin-a').setAttribute('aria-pressed',String(finMode==='annual'));
-  const c=earn.companies[finCode]; $('#fin-table').innerHTML=finTable(c); $('#fin-chart').innerHTML=`<h3 style="margin:0 0 6px;font-size:13px">${esc(c.name)} · ${finMode==='quarter'?'분기':'연간'} 매출·영업이익·OPM</h3>`+finChart(c);
+  const c={...earn.companies[finCode],code:finCode}; $('#fin-table').innerHTML=finTable(c); $('#est-meta').textContent=estPub.updatedAt?`공개본 ${estPub.updatedAt}${estPub.analyst?' · '+estPub.analyst:''}`:'공개본 없음'; if(!$('#est-form').hidden)renderEstForm(); $('#fin-chart').innerHTML=`<h3 style="margin:0 0 6px;font-size:13px">${esc(c.name)} · ${finMode==='quarter'?'분기':'연간'} 매출·영업이익·OPM</h3>`+finChart(c);
 }
 $('#fin-q').addEventListener('click',()=>{finMode='quarter';renderFin();});$('#fin-a').addEventListener('click',()=>{finMode='annual';renderFin();});
+
+
+/* ================= 당사 추정치 ================= */
+let estPub={estimates:{}}, estMine={}; try{estMine=JSON.parse(localStorage.getItem('myEst')||'{}');}catch(e){}
+function saveEst(){try{localStorage.setItem('myEst',JSON.stringify(estMine));}catch(e){}}
+function estAll(){const o={};for(const [c,v] of Object.entries(estPub.estimates||{}))o[c]={...v};for(const [c,v] of Object.entries(estMine)){o[c]={...(o[c]||{}),...v};}return o;}
+function myEst(code,period){const p=String(period||'').replace(/E$/,'');const e=estAll()[code];if(!e)return null;return e[p]||null;}
+function estPeriodsFor(c){const Q=c.quarter.periods.filter(p=>p.est).map(p=>p.label);const A=c.annual.periods.filter(p=>p.est).map(p=>p.label.slice(0,4));
+  // also next 2 quarters / next year for forward inputs
+  const last=c.quarter.periods[c.quarter.periods.length-1]?.label;if(last){let [y,m]=last.split('.').map(Number);for(let i=0;i<2;i++){m+=3;if(m>12){m=3;y++;}Q.push(`${y}.${String(m).padStart(2,'0')}`);}}
+  if(A.length){A.push(String(+A[A.length-1]+1));}
+  return {Q:[...new Set(Q)],A:[...new Set(A)]};}
+function renderEstForm(){
+  const f=$('#est-form'); const c=earn?.companies?.[finCode]; if(!c){f.innerHTML='';return;}
+  const {Q,A}=estPeriodsFor(c); const cur=estAll()[finCode]||{}; const mineC=estMine[finCode]||{};
+  const row=(p,lab)=>`<div class="p">${lab}${mineC[p]?' <span class="mine-tag">내 입력</span>':''}</div>${['rev','op','np'].map(k=>`<input data-p="${p}" data-k="${k}" inputmode="decimal" placeholder="${cur[p]?.[k]??''}" value="${mineC[p]?.[k]??''}">`).join('')}`;
+  f.innerHTML=`<div class="est-grid"><div></div><div class="h">매출액</div><div class="h">영업이익</div><div class="h">순이익</div>${Q.map(p=>row(p,p.replace(/(\d{4})\.(\d{2})/,(m,y,mm)=>`${y.slice(2)}.${{'03':'1Q','06':'2Q','09':'3Q','12':'4Q'}[mm]}`))).join('')}${A.map(p=>row(p,p+'년')).join('')}</div><div class="help">회색 플레이스홀더는 이미 공개된 당사 추정치. 빈 칸은 미입력. 억원 단위, 음수 가능.</div>`;
+  f.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{const p=inp.dataset.p,k=inp.dataset.k;const v=inp.value.trim()===''?null:parseFloat(inp.value.replace(/,/g,''));estMine[finCode]=estMine[finCode]||{};estMine[finCode][p]=estMine[finCode][p]||{};if(v==null||isNaN(v))delete estMine[finCode][p][k];else estMine[finCode][p][k]=v;if(!Object.keys(estMine[finCode][p]).length)delete estMine[finCode][p];if(!Object.keys(estMine[finCode]).length)delete estMine[finCode];saveEst();renderFin();renderEarn();renderEstForm();}));
+}
+$('#est-toggle').addEventListener('click',()=>{const f=$('#est-form');f.hidden=!f.hidden;$('#est-toggle').textContent=f.hidden?'입력 열기':'입력 닫기';if(!f.hidden)renderEstForm();});
+$('#est-copy').addEventListener('click',()=>{const out={_doc:estPub._doc||'현대차증권(당사) 추정치. code → period → {rev, op, np} 억원',updatedAt:todayKST(),analyst:estPub.analyst||'',estimates:estAll()};const txt=JSON.stringify(out,null,1);const done=()=>toast('JSON 복사됨 — data/estimates.json에 붙여넣기');navigator.clipboard?.writeText(txt).then(done).catch(()=>toast('복사 실패'));});
+$('#est-clear').addEventListener('click',()=>{estMine={};saveEst();renderFin();renderEarn();renderEstForm();toast('내 입력 초기화');});
 
 /* ================= 종목 카드 ================= */
 let coCode=null;
@@ -971,7 +1010,7 @@ function renderCo(){
     <div class="panel span4"><h3>밸류에이션 · 컨센서스 <a href="#val" data-go="val">전체 비교</a></h3><div class="kv">${kv.map(([l,v])=>`<div><span class="l">${l}</span><span class="v">${v}</span></div>`).join('')}</div></div>
     <div class="panel span8"><h3>투자자별 순매수 (20거래일, 억원) <a href="#flow" data-go="flow">수급 보드</a></h3>${flowChart(r)}</div>
     <div class="panel span4"><h3>관련 게임 순위 <a href="#watch" data-go="watch">워치리스트</a></h3>${games.length?`<ul class="mini-list">${games.map(w=>{const hits=STORES.map(s=>{const doc=charts[s.id];const h=doc?.items?.find(it=>matchItem(it,w.keys));return h?`${s.label.replace('App Store','A').replace('Google Play','G').replace('Steam','S').replace(' 한국','KR').replace(' 일본','JP').replace(' 미국','US').replace(' 중국','CN').replace(' 글로벌','GL')} ${h.r}위`:null;}).filter(Boolean);return `<li><span class="k">${esc(w.name)}</span><span>${hits.join(' · ')||'<span class="pub">Top50 밖</span>'}</span></li>`;}).join('')}</ul>`:'<div class="empty">워치리스트에 등록된 타이틀 없음</div>'}</div>
-    <div class="panel span12"><h3>실적 · 컨센서스 (분기) <a href="#earn" data-go="earn" data-fin="${r.code}">재무 상세</a></h3>${e?`<div class="fin-grid"><div>${finChartFor(e,'quarter')}</div><div class="tablewrap"><table id="co-fin">${finTableFor(e,'quarter')}</table></div></div>`:'<div class="empty">실적 데이터 없음</div>'}</div>
+    <div class="panel span12"><h3>실적 · 컨센서스 (분기) <a href="#earn" data-go="earn" data-fin="${r.code}">재무 상세</a></h3>${e?`<div class="fin-grid"><div>${finChartFor(e,'quarter')}</div><div class="tablewrap"><table id="co-fin">${finTableFor({...e,code:r.code},'quarter')}</table></div></div>`:'<div class="empty">실적 데이터 없음</div>'}</div>
     <div class="panel span4"><h3>뉴스 <a href="#news" data-go="news">더보기</a></h3>${news.length?`<ul class="mini-list">${news.map(n=>`<li><span class="k">${ago(n.ts)}</span><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a></li>`).join('')}</ul>`:'<div class="empty">뉴스 없음</div>'}</div>
     <div class="panel span4"><h3>공시 <a href="#dart" data-go="dart">더보기</a></h3>${filings.length?`<ul class="mini-list">${filings.map(x=>`<li><span class="k">${x.date.slice(5).replace('-','/')}</span><span><span class="tagc" style="--c:${TAGC[x.tag]||'#999'}">${x.tag}</span> <a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${esc(x.rcp)}" target="_blank" rel="noopener">${esc(x.title)}</a></span></li>`).join('')}</ul>`:'<div class="empty">최근 공시 없음</div>'}</div>
     <div class="panel span4"><h3>${esc(repData?.broker||'')} 리포트 <a href="#rep" data-go="rep">더보기</a></h3>${reps.length?`<ul class="mini-list">${reps.map(x=>`<li><span class="k">${x.date.slice(5).replace('-','/')}</span>${x.view||x.url?`<a href="${esc(x.view||x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>`:esc(x.title)}</li>`).join('')}</ul>`:'<div class="empty">최근 발간 리포트 없음</div>'}</div>
