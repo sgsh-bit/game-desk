@@ -60,8 +60,9 @@ for (const c of KR) {
   const have = k => arch[k] && (arch[k].src === 'dart' || arch[k].src === 'fn') && arch[k].rev != null;
   const recentKeys = new Set([0, 1].map(i => { const d = new Date(); d.setUTCMonth(d.getUTCMonth() - 3 * i - 1); const q = Math.floor(d.getUTCMonth() / 3) * 3 + 3; return `${d.getUTCFullYear()}${String(q).padStart(2, '0')}`; }));
   const firstRun = !Object.keys(arch).some(k => arch[k]?.src === 'dart');
-  for (let y = firstRun ? thisYear - 2 : thisYear - 1; y <= thisYear; y++) {
-    const need = k => firstRun || !have(k) || recentKeys.has(k);
+  const deep = !Object.keys(arch).some(k => k < `${thisYear - 2}01`); // 3년 밴드용: 4년 전까지 한 번 백필
+  for (let y = (firstRun || deep) ? thisYear - 4 : thisYear - 1; y <= thisYear; y++) {
+    const need = k => firstRun || (deep && +k.slice(0, 4) < thisYear - 1) || !have(k) || recentKeys.has(k);
     const q1 = need(`${y}03`) ? await fin(cc, y, '11013') : null; if (q1) await sleep(250);
     const h1 = need(`${y}06`) ? await fin(cc, y, '11012') : null; if (h1) await sleep(250);
     const q3 = need(`${y}09`) || need(`${y}12`) ? await fin(cc, y, '11014') : null; if (q3) await sleep(250);
