@@ -2,7 +2,7 @@ name: collect-market
 
 on:
   schedule:
-    - cron: "40 7 * * 1-5"    # 16:40 KST weekdays — after KRX close (Naver 수급 확정치)
+    - cron: "10 9 * * 1-5"    # 18:10 KST weekdays — after 투자자별 매매동향 확정
     - cron: "10 22 * * 0-4"   # 07:10 KST Mon–Fri — after US close (global peers)
   workflow_dispatch:
 

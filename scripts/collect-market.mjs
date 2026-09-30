@@ -81,6 +81,19 @@ async function naverTrend(code, dump = false) {
   return { flows: rows.slice(0, 40), unit: '억원(주수×종가 환산)', sums: { frgn1: sum('frgn', 1), frgn5: sum('frgn', 5), frgn20: sum('frgn', 20), inst1: sum('inst', 1), inst5: sum('inst', 5), inst20: sum('inst', 20), indiv5: sum('indiv', 5) }, frgnRate: rows[0].frgnRate, asOf: rows[0].d, src: 'naver' };
 }
 
+
+// Naver integration: PER/PBR/EPS/배당수익률 (국내 기준 지표)
+async function naverIntegration(code, dump = false) {
+  const r = await fetch(`https://m.stock.naver.com/api/stock/${code}/integration`, { headers: NAVER_HDR });
+  const txt = await r.text();
+  if (dump) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'data', 'debug', `naver_${code}_integration.txt`), `${r.status}\n${txt.slice(0, 8000)}`); }
+  if (!r.ok) throw new Error(`integration ${r.status}`);
+  const j = JSON.parse(txt);
+  const infos = j.totalInfos || j.stockInfos || [];
+  const get = re => { const x = infos.find(i => re.test(String(i.code || i.key || ''))); return x ? num(String(x.value).replace(/배|원|%|주|,/g, '')) : null; };
+  return { nPer: get(/^per$/i), nPbr: get(/^pbr$/i), nEps: get(/^eps$/i), nDiv: get(/dividend/i), nMcap: get(/marketValue|marketCap/i) };
+}
+
 // ---------- Yahoo: 밸류에이션·컨센서스·수익률 ----------
 async function yahoo(sym) {
   const q = await yahooFinance.quoteSummary(sym, { modules: ['price', 'summaryDetail', 'defaultKeyStatistics', 'financialData'] });
@@ -124,6 +137,7 @@ for (const s of KR) {
     try { Object.assign(row, await naverTrend(s.code, s === KR[0])); }
     catch (e2) { result.failures.push(`flows ${s.code}: krx=${e1.message.slice(0, 40)} naver=${e2.message.slice(0, 200)}`); log(`naver FAIL ${s.code}`); Object.assign(row, pick(old, ['flows','sums','unit','asOf','frgnRate','src'])); } }
   await sleep(700);
+  try { const n = await naverIntegration(s.code, s === KR[0]); if (n.nPer != null) row.per = n.nPer; if (n.nPbr != null) row.pbr = n.nPbr; if (n.nDiv != null) row.divYield = n.nDiv; row.naverPer = n.nPer; } catch (e) { log(`integration ${s.code}: ${e.message}`); }
   result.kr.push(row); await sleep(300);
 }
 for (const g of GLOBAL) {
