@@ -45,6 +45,42 @@ async function krxFlows(code) {
   return { flows: rows.slice(0, 40), unit: '억원', sums: { frgn1: sum('frgn', 1), frgn5: sum('frgn', 5), frgn20: sum('frgn', 20), inst1: sum('inst', 1), inst5: sum('inst', 5), inst20: sum('inst', 20), indiv5: sum('indiv', 5), pension5: sum('pension', 5) }, asOf: rows[0].d };
 }
 
+
+// ---------- Naver mobile stock API (fallback when KRX blocks overseas IPs) ----------
+const NAVER_HDR = { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1', accept: 'application/json', 'accept-language': 'ko-KR,ko;q=0.9', referer: 'https://m.stock.naver.com/' };
+async function naverTrend(code, dump = false) {
+  const cands = [
+    `https://m.stock.naver.com/api/stock/${code}/trend?pageSize=40&page=1`,
+    `https://api.stock.naver.com/stock/${code}/trend?pageSize=40&page=1`,
+    `https://m.stock.naver.com/api/stock/${code}/integration`,
+  ];
+  let best = null, errs = [];
+  for (const u of cands) {
+    try {
+      const r = await fetch(u, { headers: NAVER_HDR }); const txt = await r.text();
+      if (dump) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'data', 'debug', `naver_${code}_${cands.indexOf(u)}.txt`), `${r.status}\n${txt.slice(0, 6000)}`); }
+      if (!r.ok) { errs.push(`${u} ${r.status}`); continue; }
+      const j = JSON.parse(txt);
+      // find an array of daily rows with foreigner/organ keys
+      const arrs = []; (function walk(o, d) { if (d > 4 || !o) return; if (Array.isArray(o)) { if (o.length && typeof o[0] === 'object') arrs.push(o); o.slice(0, 3).forEach(x => walk(x, d + 1)); } else if (typeof o === 'object') Object.values(o).forEach(x => walk(x, d + 1)); })(j, 0);
+      const arr = arrs.find(a => Object.keys(a[0]).some(k => /foreign/i.test(k)) && Object.keys(a[0]).some(k => /organ|institution/i.test(k)));
+      if (arr) { best = arr; break; }
+      errs.push(`${u}: no trend array (keys ${Object.keys(j).slice(0, 8).join(',')})`);
+    } catch (e) { errs.push(`${u}: ${e.message}`); }
+  }
+  if (!best) throw new Error('naver trend: ' + errs.join(' | ').slice(0, 300));
+  const k0 = Object.keys(best[0]);
+  const key = re => k0.find(k => re.test(k));
+  const kd = key(/bizdate|date|day/i), kc = key(/close/i), kf = key(/foreigner.*(pure|net).*(quant|buy)|foreign.*net/i), ko = key(/organ.*(pure|net).*(quant|buy)|institution.*net/i), ki = key(/individual.*(pure|net)/i), kr = key(/foreigner.*hold|hold.*ratio/i);
+  const rows = best.map(x => ({ d: String(x[kd]).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3').replace(/\./g, '-').slice(0, 10), close: num(x[kc]), frgnQ: num(x[kf]), instQ: num(x[ko]), indivQ: ki ? num(x[ki]) : null, frgnRate: kr ? num(x[kr]) : null }))
+    .filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x.d)).sort((a, b) => b.d.localeCompare(a.d));
+  if (rows.length < 5) throw new Error(`naver trend ${code}: ${rows.length} rows (keys ${k0.join(',')})`);
+  // 주수 × 종가 → 억원 (근사)
+  rows.forEach(x => { x.frgn = x.frgnQ != null && x.close ? x.frgnQ * x.close / 1e8 : null; x.inst = x.instQ != null && x.close ? x.instQ * x.close / 1e8 : null; x.indiv = x.indivQ != null && x.close ? x.indivQ * x.close / 1e8 : null; });
+  const sum = (k, n) => rows.slice(0, n).reduce((s, x) => s + (x[k] || 0), 0);
+  return { flows: rows.slice(0, 40), unit: '억원(주수×종가 환산)', sums: { frgn1: sum('frgn', 1), frgn5: sum('frgn', 5), frgn20: sum('frgn', 20), inst1: sum('inst', 1), inst5: sum('inst', 5), inst20: sum('inst', 20), indiv5: sum('indiv', 5) }, frgnRate: rows[0].frgnRate, asOf: rows[0].d, src: 'naver' };
+}
+
 // ---------- Yahoo: 밸류에이션·컨센서스·수익률 ----------
 async function yahoo(sym) {
   const q = await yahooFinance.quoteSummary(sym, { modules: ['price', 'summaryDetail', 'defaultKeyStatistics', 'financialData'] });
@@ -52,7 +88,7 @@ async function yahoo(sym) {
   const out = {
     price: p.regularMarketPrice ?? null, chgPct: p.regularMarketChangePercent != null ? p.regularMarketChangePercent * 100 : null,
     ccy: p.currency || null, mcap: p.marketCap ?? null,
-    per: s.trailingPE ?? null, fwdPer: s.forwardPE ?? k.forwardPE ?? null, pbr: k.priceToBook ?? null, evEbitda: k.enterpriseToEbitda ?? null,
+    per: s.trailingPE ?? (k.trailingEps && p.regularMarketPrice ? p.regularMarketPrice / k.trailingEps : null), fwdPer: s.forwardPE ?? k.forwardPE ?? null, pbr: k.priceToBook ?? null, evEbitda: k.enterpriseToEbitda ?? null,
     divYield: s.dividendYield != null ? s.dividendYield * 100 : null, hi52: s.fiftyTwoWeekHigh ?? null, lo52: s.fiftyTwoWeekLow ?? null,
     target: f.targetMeanPrice ?? null, recMean: f.recommendationMean ?? null, recKey: f.recommendationKey ?? null, nAnalysts: f.numberOfAnalystOpinions ?? null,
     revGrowth: f.revenueGrowth != null ? f.revenueGrowth * 100 : null, opMargin: f.operatingMargins != null ? f.operatingMargins * 100 : null,
@@ -83,7 +119,10 @@ for (const s of KR) {
   const row = { ...s, sym };
   const old = (prev.kr || []).find(x => x.code === s.code) || {};
   try { Object.assign(row, await yahoo(sym)); } catch (e) { result.failures.push(`yahoo ${sym}: ${e.message}`); log(`yahoo FAIL ${sym}: ${e.message}`); Object.assign(row, pick(old, ['price','chgPct','ccy','mcap','per','fwdPer','pbr','evEbitda','divYield','hi52','lo52','target','recMean','recKey','nAnalysts','upside','ret','spark','revGrowth','opMargin'])); }
-  try { Object.assign(row, await krxFlows(s.code)); } catch (e) { result.failures.push(`krx ${s.code}: ${e.message}`); log(`krx FAIL ${s.code}: ${e.message}`); Object.assign(row, pick(old, ['flows','sums','unit','asOf'])); }
+  try { Object.assign(row, await krxFlows(s.code)); row.src = 'krx'; }
+  catch (e1) { log(`krx FAIL ${s.code}: ${e1.message.slice(0, 80)}`);
+    try { Object.assign(row, await naverTrend(s.code, s === KR[0])); }
+    catch (e2) { result.failures.push(`flows ${s.code}: krx=${e1.message.slice(0, 40)} naver=${e2.message.slice(0, 200)}`); log(`naver FAIL ${s.code}`); Object.assign(row, pick(old, ['flows','sums','unit','asOf','frgnRate','src'])); } }
   await sleep(700);
   result.kr.push(row); await sleep(300);
 }
