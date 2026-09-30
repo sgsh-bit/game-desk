@@ -16,14 +16,19 @@ const bgn = ymd(new Date(Date.now() - days * 86400000)), end = ymd(new Date());
 
 // importance tagging (for highlight + filter)
 const TAGS = [
-  [/영업\(잠정\)실적|잠정실적|연결재무제표기준영업/, '실적'],
-  [/자기주식|자사주/, '자사주'],
+  [/영업\(잠정\)실적|잠정실적|연결재무제표기준영업|매출액또는손익구조/, '실적'],
+  [/자기주식|자사주|주식소각|신탁계약/, '자사주'],
+  [/기업가치제고|밸류업/, '밸류업'],
+  [/조회공시|풍문또는보도|매매거래정지|투자판단관련주요경영사항/, '이슈'],
   [/현금ㆍ현물배당|현금배당|배당/, '배당'],
   [/유상증자|무상증자|전환사채|신주인수권|교환사채|감자/, '자본'],
   [/합병|분할|영업양수|영업양도|타법인주식및출자증권(취득|처분)|주식교환/, 'M&A'],
   [/최대주주|주식등의대량보유|임원ㆍ주요주주/, '지분'],
   [/단일판매|공급계약/, '계약'],
   [/기업설명회|IR/, 'IR'],
+  [/주주총회|주주명부폐쇄/, '주총'],
+  [/대규모기업집단|기업집단현황/, '정기'],
+  [/채무보증|유형자산취득|자산양수|자산양도/, '투자'],
   [/소송|제재|횡령|배임/, '리스크'],
   [/분기보고서|반기보고서|사업보고서/, '정기'],
 ];
@@ -42,6 +47,7 @@ for (const cls of ['Y', 'K']) {
 }
 const merged = new Map((prev.items || []).map(x => [x.rcp, x]));
 for (const x of found) merged.set(x.rcp, x);
+for (const x of merged.values()) x.tag = tag(x.title);
 const items = [...merged.values()].sort((a, b) => b.rcp.localeCompare(a.rcp)).slice(0, 400);
 fs.writeFileSync(OUT, JSON.stringify({ generatedAt: new Date().toISOString(), items }) + '\n');
 console.log(`dart: +${found.length} new window rows, total ${items.length}`);

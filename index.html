@@ -714,7 +714,7 @@ $('#earn-copy').addEventListener('click',()=>{
 
 /* ---------- DART 공시 ---------- */
 let dart=null,dartTag='all',dartCo='all';
-const TAGC={실적:'#C8102E',자사주:'#0F7B5F',배당:'#0F7B5F',자본:'#8A5A00','M&A':'#5B4BC4',지분:'#1A5FD6',계약:'#0F7B5F',IR:'#6B7280',리스크:'#C8102E',정기:'#6B7280',기타:'#9AA3B2'};
+const TAGC={실적:'#C8102E',자사주:'#0F7B5F',밸류업:'#0F7B5F',배당:'#0F7B5F',자본:'#8A5A00','M&A':'#5B4BC4',지분:'#1A5FD6',계약:'#0F7B5F',투자:'#8A5A00',이슈:'#C8102E',리스크:'#C8102E',IR:'#6B7280',주총:'#6B7280',정기:'#6B7280',기타:'#9AA3B2'};
 function renderDart(){
   const body=$('#dart-body'); if(!dart){body.innerHTML='<tr><td colspan="5" class="empty">DART 공시가 아직 연결되지 않았습니다. OpenDART 인증키를 저장소 Secret(OPENDART_API_KEY)에 등록하면 매시 자동 수집됩니다.</td></tr>';return;}
   $('#dart-stamp').textContent='수집 '+fmtStamp(dart.generatedAt);
@@ -770,7 +770,7 @@ function renderBrief(){
     if(soon.length){cards.push(`<div class="bcard"><h3>실적 발표 임박 (2주) <a href="#earn" data-go="earn">컨센서스</a></h3><ul>${soon.map(r=>`<li><span class="k">${r.ev.date.slice(5).replace('-','/')}</span><span>${esc(r.name)} ${r.eLab}E</span><span class="v">OP ${eok(r.eOp)} ${typeof r.eOpY==='string'?r.eOpY:fmt.pct(r.eOpY,0)}</span></li>`).join('')}</ul></div>`);
       briefLines.push('■ 실적 발표 임박',...soon.map(r=>`・${r.ev.date.slice(5).replace('-','/')} ${r.name} → ${r.eLab}E OP ${eok(r.eOp)} (${typeof r.eOpY==='string'?r.eOpY:fmt.pct(r.eOpY,0)+' YoY'})`));}}
   // 5 공시
-  if(dart){const imp=dart.items.filter(x=>x.date>=addDays(t,-3)&&!['정기','기타','IR'].includes(x.tag)).slice(0,8);
+  if(dart){const imp=dart.items.filter(x=>x.date>=addDays(t,-3)&&!['정기','기타','IR','주총'].includes(x.tag)).slice(0,8);
     cards.push(`<div class="bcard"><h3>주요 공시 (3일) <a href="#dart" data-go="dart">전체</a></h3>${imp.length?`<ul>${imp.map(x=>`<li><span class="k">${x.date.slice(5).replace('-','/')}</span><span><span class="tagc" style="--c:${TAGC[x.tag]||'#999'}">${x.tag}</span> ${esc(x.name)} · <a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${esc(x.rcp)}" target="_blank" rel="noopener">${esc(x.title)}</a></span><span></span></li>`).join('')}</ul>`:'<div class="empty">주요 공시 없음</div>'}</div>`);
     if(imp.length)briefLines.push('■ 주요 공시',...imp.map(x=>`・${x.date.slice(5).replace('-','/')} ${x.name} [${x.tag}] ${x.title}`));}
   // 6 리포트
