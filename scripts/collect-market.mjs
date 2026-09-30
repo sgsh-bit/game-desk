@@ -91,7 +91,7 @@ async function naverIntegration(code, dump = false) {
   const j = JSON.parse(txt);
   const infos = j.totalInfos || j.stockInfos || [];
   const get = re => { const x = infos.find(i => re.test(String(i.code || i.key || ''))); return x ? num(String(x.value).replace(/배|원|%|주|,/g, '')) : null; };
-  return { nPer: get(/^per$/i), nPbr: get(/^pbr$/i), nEps: get(/^eps$/i), nDiv: get(/dividend/i), nMcap: get(/marketValue|marketCap/i) };
+  return { nPer: get(/^per$/i), nPbr: get(/^pbr$/i), nEps: get(/^eps$/i), nDiv: get(/^dividendYieldRatio$/i), nCnsPer: get(/^cnsPer$/i), nFrgn: get(/^foreignRate$/i) };
 }
 
 // ---------- Yahoo: 밸류에이션·컨센서스·수익률 ----------
@@ -137,7 +137,7 @@ for (const s of KR) {
     try { Object.assign(row, await naverTrend(s.code, s === KR[0])); }
     catch (e2) { result.failures.push(`flows ${s.code}: krx=${e1.message.slice(0, 40)} naver=${e2.message.slice(0, 200)}`); log(`naver FAIL ${s.code}`); Object.assign(row, pick(old, ['flows','sums','unit','asOf','frgnRate','src'])); } }
   await sleep(700);
-  try { const n = await naverIntegration(s.code, s === KR[0]); if (n.nPer != null) row.per = n.nPer; if (n.nPbr != null) row.pbr = n.nPbr; if (n.nDiv != null) row.divYield = n.nDiv; row.naverPer = n.nPer; } catch (e) { log(`integration ${s.code}: ${e.message}`); }
+  try { const n = await naverIntegration(s.code, s === KR[0]); if (n.nPer != null) row.per = n.nPer; if (n.nPbr != null) row.pbr = n.nPbr; if (n.nDiv != null) row.divYield = n.nDiv; if (n.nCnsPer != null) row.cnsPer = n.nCnsPer; if (n.nFrgn != null) row.frgnRate = n.nFrgn; } catch (e) { log(`integration ${s.code}: ${e.message}`); }
   result.kr.push(row); await sleep(300);
 }
 for (const g of GLOBAL) {

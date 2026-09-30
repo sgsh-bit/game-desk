@@ -206,13 +206,13 @@ tr.past td{opacity:.55}
 
 
 <section class="view" id="view-flow" hidden>
-  <div class="sec-head"><h2>수급 동향</h2><span class="sub">외국인·기관 순매수 거래대금 (억원) · KRX 정보데이터시스템 · 매 거래일 16:40 KST 갱신</span><span class="spacer"></span><span class="stamp" id="flow-stamp"></span></div>
+  <div class="sec-head"><h2>수급 동향</h2><span class="sub">외국인·기관 순매수 (억원 = 순매수 주수 × 당일 종가 환산) · 매 거래일 18:10 KST 갱신</span><span class="spacer"></span><span class="stamp" id="flow-stamp"></span></div>
   <div class="tiles" id="flow-tiles"></div>
   <div class="panel"><div class="tablewrap"><table id="flow-table">
     <thead><tr><th>종목</th><th class="num">종가</th><th class="num">등락</th><th class="num">시총</th>
-      <th class="num">외인 1일</th><th class="num">외인 5일</th><th class="num">외인 20일</th><th class="num">기관 1일</th><th class="num">기관 5일</th><th class="num">기관 20일</th><th class="num">연기금 5일</th><th>외인 누적 20일</th></tr></thead>
+      <th class="num">외인 1일</th><th class="num">외인 5일</th><th class="num">외인 20일</th><th class="num">기관 1일</th><th class="num">기관 5일</th><th class="num">기관 20일</th><th class="num">외인 보유율</th><th>외인 누적 20일</th></tr></thead>
     <tbody id="flow-body"><tr><td colspan="12" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
-  <p class="help">정렬: 외인 5일 순매수 순. 기관 = 금융투자·보험·투신·사모·은행·기타금융·연기금 합계, 외국인 = 외국인+기타외국인. 스파크라인은 최근 20거래일 외국인 누적 순매수.</p>
+  <p class="help">정렬: 외인 5일 순매수 순. 스파크라인은 최근 20거래일 외국인 누적 순매수. 자료: 네이버증권 투자자별 매매동향(장 마감 후 잠정치 기준, 거래대금이 아닌 주수 환산이므로 근사값).</p>
 </section>
 
 <section class="view" id="view-val" hidden>
@@ -222,7 +222,7 @@ tr.past td{opacity:.55}
     <thead><tr><th>종목</th><th class="num">주가</th><th class="num">1D</th><th class="num">1M</th><th class="num">3M</th><th class="num">YTD</th><th class="num">시총</th>
       <th class="num">PER(T)</th><th class="num">PER(F)</th><th class="num">PBR</th><th class="num">EV/EBITDA</th><th class="num">목표가</th><th class="num">상승여력</th><th>투자의견</th><th>60일</th></tr></thead>
     <tbody id="val-body"><tr><td colspan="15" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
-  <p class="help">투자의견 척도 1(강력매수)~5(매도), 괄호는 커버 애널리스트 수. 시총: 원화 조원 / 해외는 현지통화 십억. 소형주는 컨센서스가 없을 수 있음(–).</p>
+  <p class="help">국내 PER(T)·PBR은 최근 결산 기준(네이버증권), PER(F)는 국내 = 당해연도 추정 PER(FnGuide 컨센서스), 해외 = 12M forward(LSEG). 투자의견 척도 1(강력매수)~5(매도), 괄호는 커버 애널리스트 수. 시총: 원화 조원 / 해외는 현지통화 십억. 소형주는 컨센서스가 없을 수 있음(–).</p>
 </section>
 
 <section class="view" id="view-ind" hidden>
@@ -400,7 +400,7 @@ function renderFlow(){
   $('#flow-body').innerHTML=rows.map(({r,f1,f5,f20,i1,i5,i20})=>{
     const cum=[];let c=0;for(const f of (r.flows||[]).slice(0,20).reverse()){c+=(f.frgn||0);cum.push(c);}
     const cell=v=>`<td class="num ${cls(v)}">${fmt.signed(v)}</td>`;
-    return `<tr><td class="name">${esc(r.name)}<div class="pub">${r.code} · ${esc(r.sector)}</div></td><td class="num">${fmt.px(r.price,'KRW')}</td><td class="num ${cls(r.chgPct)}">${fmt.pct(r.chgPct)}</td><td class="num">${fmt.krwBig(r.mcap)}</td>${cell(f1)}${cell(f5)}${cell(f20)}${cell(i1)}${cell(i5)}${cell(i20)}${cell(r.sums?.pension5??null)}<td>${spark(cum,{zero:true})}</td></tr>`;}).join('');
+    return `<tr><td class="name">${esc(r.name)}<div class="pub">${r.code} · ${esc(r.sector)}</div></td><td class="num">${fmt.px(r.price,'KRW')}</td><td class="num ${cls(r.chgPct)}">${fmt.pct(r.chgPct)}</td><td class="num">${fmt.krwBig(r.mcap)}</td>${cell(f1)}${cell(f5)}${cell(f20)}${cell(i1)}${cell(i5)}${cell(i20)}<td class="num">${r.frgnRate!=null?r.frgnRate.toFixed(2)+'%':'–'}</td><td>${spark(cum,{zero:true})}</td></tr>`;}).join('');
 }
 
 /* ---------- 밸류에이션 ---------- */
@@ -414,11 +414,11 @@ function renderVal(){
   $('#val-stamp').textContent='수집 '+fmtStamp(market.generatedAt);
   const list=valFilter==='kr'?market.kr:market.global;
   const med=arr=>{const a=arr.filter(x=>x!=null&&isFinite(x)&&x>0).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:null;};
-  const mF=med(list.map(r=>r.fwdPer)), mT=med(list.map(r=>r.per)), mB=med(list.map(r=>r.pbr)), mE=med(list.map(r=>r.evEbitda));
+  const mF=med(list.map(r=>r.cnsPer??r.fwdPer)), mT=med(list.map(r=>r.per)), mB=med(list.map(r=>r.pbr)), mE=med(list.map(r=>r.evEbitda));
   const x=v=>v==null||!isFinite(v)?'–':v<0?'적자':v.toFixed(1)+'x';
   const rows=list.map(r=>`<tr><td class="name">${esc(r.name)}<div class="pub">${r.code?r.code+' · '+esc(r.sector):r.sym+' · '+esc(r.region)}</div></td>
     <td class="num">${fmt.px(r.price,r.ccy)}</td><td class="num ${cls(r.chgPct)}">${fmt.pct(r.chgPct)}</td><td class="num ${cls(r.ret?.m1)}">${fmt.pct(r.ret?.m1,0)}</td><td class="num ${cls(r.ret?.m3)}">${fmt.pct(r.ret?.m3,0)}</td><td class="num ${cls(r.ret?.ytd)}">${fmt.pct(r.ret?.ytd,0)}</td>
-    <td class="num">${r.ccy==='KRW'?fmt.krwBig(r.mcap):fmt.ccyBig(r.mcap,r.ccy)}</td><td class="num">${x(r.per)}</td><td class="num">${x(r.fwdPer)}</td><td class="num">${x(r.pbr)}</td><td class="num">${x(r.evEbitda)}</td>
+    <td class="num">${r.ccy==='KRW'?fmt.krwBig(r.mcap):fmt.ccyBig(r.mcap,r.ccy)}</td><td class="num">${x(r.per)}</td><td class="num">${x(r.cnsPer??r.fwdPer)}</td><td class="num">${x(r.pbr)}</td><td class="num">${x(r.evEbitda)}</td>
     <td class="num">${fmt.px(r.target,r.ccy)}</td><td class="num ${cls(r.upside)}">${fmt.pct(r.upside,0)}</td><td>${recLabel(r.recMean,r.nAnalysts)}</td><td>${spark(r.spark)}</td></tr>`).join('');
   $('#val-body').innerHTML=rows+`<tr><td class="name" style="color:var(--muted)">중간값</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="num">${x(mT)}</td><td class="num">${x(mF)}</td><td class="num">${x(mB)}</td><td class="num">${x(mE)}</td><td colspan="4"></td></tr>`;
 }
