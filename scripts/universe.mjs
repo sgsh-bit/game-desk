@@ -8,7 +8,7 @@ export const KR = [
   { code: '293490', mkt: 'KQ', name: '카카오게임즈', sector: '게임' },
   { code: '263750', mkt: 'KQ', name: '펄어비스', sector: '게임' },
   { code: '462870', mkt: 'KS', name: '시프트업', sector: '게임' },
-  { code: '078340', mkt: 'KS', name: '컴투스', sector: '게임' },
+  { code: '078340', mkt: 'KQ', name: '컴투스', sector: '게임' },
   { code: '112040', mkt: 'KQ', name: '위메이드', sector: '게임' },
   { code: '095660', mkt: 'KQ', name: '네오위즈', sector: '게임' },
   { code: '181710', mkt: 'KS', name: 'NHN', sector: '인터넷' },

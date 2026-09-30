@@ -18,9 +18,11 @@ async function naverFlows(code, pages = 2) {
   const rows = [];
   for (let p = 1; p <= pages; p++) {
     const url = `https://finance.naver.com/item/frgn.naver?code=${code}&page=${p}`;
-    const r = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36', 'accept-language': 'ko-KR,ko;q=0.9', referer: 'https://finance.naver.com/' } });
+    const r = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36', 'accept-language': 'ko-KR,ko;q=0.9,en;q=0.5', accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', referer: 'https://finance.naver.com/item/main.naver?code=' + code }  });
     if (!r.ok) throw new Error(`naver ${code} HTTP ${r.status}`);
-    const html = new TextDecoder('euc-kr').decode(await r.arrayBuffer());
+    const buf = await r.arrayBuffer();
+    const html = new TextDecoder('euc-kr').decode(buf);
+    if (p === 1 && !html.includes('type2')) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'data', 'debug', `naver_${code}.html`), html.slice(0, 200000)); }
     for (const tr of html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || []) {
       const tds = [...tr.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(m => m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;|\s+/g, ' ').trim());
       if (tds.length < 9 || !/^\d{4}\.\d{2}\.\d{2}$/.test(tds[0])) continue;
@@ -32,7 +34,7 @@ async function naverFlows(code, pages = 2) {
     await sleep(400);
   }
   const seen = new Set(); const uniq = rows.filter(x => !seen.has(x.d) && seen.add(x.d)).sort((a, b) => b.d.localeCompare(a.d));
-  if (uniq.length < 5) throw new Error(`naver ${code}: parsed ${uniq.length} rows`);
+  if (uniq.length < 5) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); throw new Error(`naver ${code}: parsed ${uniq.length} rows`); }
   const sum = (k, n) => uniq.slice(0, n).reduce((s, x) => s + (x[k] || 0), 0);
   return { flows: uniq.slice(0, 40), sums: { frgn1: sum('frgn', 1), frgn5: sum('frgn', 5), frgn20: sum('frgn', 20), inst1: sum('inst', 1), inst5: sum('inst', 5), inst20: sum('inst', 20) }, frgnRate: uniq[0].frgnRate, asOf: uniq[0].d };
 }
@@ -49,6 +51,10 @@ async function yahoo(sym) {
     target: f.targetMeanPrice ?? null, recMean: f.recommendationMean ?? null, recKey: f.recommendationKey ?? null, nAnalysts: f.numberOfAnalystOpinions ?? null,
     revGrowth: f.revenueGrowth != null ? f.revenueGrowth * 100 : null, opMargin: f.operatingMargins != null ? f.operatingMargins * 100 : null,
   };
+  if (out.per == null || out.pbr == null || out.fwdPer == null) {
+    try { const qq = await yahooFinance.quote(sym); out.per ??= qq.trailingPE ?? (qq.epsTrailingTwelveMonths ? (qq.regularMarketPrice / qq.epsTrailingTwelveMonths) : null); out.fwdPer ??= qq.forwardPE ?? (qq.epsForward ? qq.regularMarketPrice / qq.epsForward : null); out.pbr ??= qq.priceToBook ?? null; out.price ??= qq.regularMarketPrice ?? null; out.mcap ??= qq.marketCap ?? null; } catch (e) { log(`quote ${sym}: ${e.message}`); }
+  }
+  if (out.per != null && out.per < 0) out.per = -1; // 적자
   if (out.price && out.target) out.upside = (out.target / out.price - 1) * 100;
   // returns from 1y daily closes
   try {

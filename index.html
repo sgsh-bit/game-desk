@@ -136,6 +136,21 @@ tr.past td{opacity:.55}
   td.note{max-width:220px}
 }
 [hidden]{display:none!important}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.tile .l{font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+.tile .v{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .d{font-size:12px;margin-top:2px}
+.spark{display:block;width:120px;height:28px}
+.pos{color:var(--up)} .neg{color:var(--down)}
+.rec{display:inline-block;font-size:11px;font-weight:600;padding:1px 6px;border-radius:3px;background:var(--line2);color:var(--fg2)}
+.rec.buy{background:var(--up-soft);color:var(--up)} .rec.sell{background:var(--down-soft);color:var(--down)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--fg2);margin:0 0 6px}
+.legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px;border-radius:1px}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--mono);font-size:11px}
+.chart .grid{stroke:var(--line2);stroke-width:1}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:grid;gap:6px;max-width:80ch}
 </style>
 </head>
@@ -146,6 +161,10 @@ tr.past td{opacity:.55}
     <button role="tab" data-tab="watch" aria-selected="true">워치리스트</button>
     <button role="tab" data-tab="rank" aria-selected="false">매출순위</button>
     <button role="tab" data-tab="cal" aria-selected="false">이벤트 캘린더</button>
+    <button role="tab" data-tab="flow" aria-selected="false">수급</button>
+    <button role="tab" data-tab="val" aria-selected="false">밸류에이션</button>
+    <button role="tab" data-tab="ind" aria-selected="false">산업데이터</button>
+    <button role="tab" data-tab="ccu" aria-selected="false">스팀 동접</button>
   </nav>
 </div></header>
 
@@ -185,6 +204,44 @@ tr.past td{opacity:.55}
   <p class="help">"예상"으로 표시된 실적발표일은 전년 발표 패턴 기반 추정치이며 확정 공시 시 갱신됩니다.</p>
 </section>
 
+
+<section class="view" id="view-flow" hidden>
+  <div class="sec-head"><h2>수급 동향</h2><span class="sub">외국인·기관 순매수 (억원, 일별 순매매 주수 × 당일 종가 환산) · 매 거래일 16:40 KST 갱신</span><span class="spacer"></span><span class="stamp" id="flow-stamp"></span></div>
+  <div class="tiles" id="flow-tiles"></div>
+  <div class="panel"><div class="tablewrap"><table id="flow-table">
+    <thead><tr><th>종목</th><th class="num">종가</th><th class="num">등락</th><th class="num">시총</th>
+      <th class="num">외인 1일</th><th class="num">외인 5일</th><th class="num">외인 20일</th><th class="num">기관 1일</th><th class="num">기관 5일</th><th class="num">기관 20일</th><th class="num">외인 보유율</th><th>외인 누적 20일</th></tr></thead>
+    <tbody id="flow-body"><tr><td colspan="12" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">정렬: 외인 5일 순매수 순. 스파크라인은 최근 20거래일 외국인 누적 순매수. 데이터: 네이버금융 투자자별 매매동향(장 마감 후 확정치).</p>
+</section>
+
+<section class="view" id="view-val" hidden>
+  <div class="sec-head"><h2>밸류에이션 · 컨센서스</h2><span class="sub">PER/PBR/EV/EBITDA는 LSEG 컨센서스 기준(Fwd = 12M forward) · 목표주가·투자의견은 애널리스트 평균</span><span class="spacer"></span><span class="stamp" id="val-stamp"></span></div>
+  <div class="chips" id="val-chips" style="margin-bottom:12px"></div>
+  <div class="panel"><div class="tablewrap"><table id="val-table">
+    <thead><tr><th>종목</th><th class="num">주가</th><th class="num">1D</th><th class="num">1M</th><th class="num">3M</th><th class="num">YTD</th><th class="num">시총</th>
+      <th class="num">PER(T)</th><th class="num">PER(F)</th><th class="num">PBR</th><th class="num">EV/EBITDA</th><th class="num">목표가</th><th class="num">상승여력</th><th>투자의견</th><th>60일</th></tr></thead>
+    <tbody id="val-body"><tr><td colspan="15" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">투자의견 척도 1(강력매수)~5(매도), 괄호는 커버 애널리스트 수. 시총: 원화 조원 / 해외는 현지통화 십억. 소형주는 컨센서스가 없을 수 있음(–).</p>
+</section>
+
+<section class="view" id="view-ind" hidden>
+  <div class="sec-head"><h2>산업 데이터 · 온라인쇼핑</h2><span class="sub">통계청 온라인쇼핑동향조사 (월간, KOSIS)</span><span class="spacer"></span><span class="stamp" id="ind-stamp"></span></div>
+  <div class="tiles" id="ind-tiles"></div>
+  <div class="panel" style="padding:12px" id="ind-chart"></div>
+  <div class="panel" style="margin-top:14px"><div class="tablewrap"><table id="ind-table">
+    <thead><tr><th>상품군</th><th class="num">최근월 거래액</th><th class="num">YoY</th><th class="num">전월</th><th class="num">3개월 평균 YoY</th><th class="num">모바일 비중</th><th>24개월</th></tr></thead>
+    <tbody id="ind-body"><tr><td colspan="7" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+</section>
+
+<section class="view" id="view-ccu" hidden>
+  <div class="sec-head"><h2>스팀 동시접속자</h2><span class="sub">Steam 공식 API · 매시 수집 · 국내 게임사 PC 타이틀 중심</span><span class="spacer"></span><span class="stamp" id="ccu-stamp"></span></div>
+  <div class="panel"><div class="tablewrap"><table id="ccu-table">
+    <thead><tr><th>게임</th><th>회사</th><th class="num">현재</th><th class="num">24h 피크</th><th class="num">7일 평균</th><th class="num">전주 대비</th><th class="num">30일 피크</th><th>30일 추이(시간별)</th></tr></thead>
+    <tbody id="ccu-body"><tr><td colspan="8" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">전주 대비 = 최근 7일 평균 ÷ 직전 7일 평균 − 1. 수집 시작 초기에는 기간이 짧아 일부 지표가 비어 있습니다.</p>
+</section>
+
 <footer class="foot">
   <div>자료: Apple App Store 공식 RSS 피드(최고 매출·게임), Google Play 최고 매출 차트(휴대전화), Steam 주간 최다판매 차트(매출 기준). 스토어 순위는 매출 규모가 아닌 순위 지표이며, 스토어 정책·시간대에 따라 변동될 수 있습니다.</div>
   <div>본 페이지는 정보 제공 목적이며 특정 종목의 매수·매도 권유가 아닙니다. 데이터 기준 시각: <span id="foot-stamp"></span></div>
@@ -222,7 +279,7 @@ const charts={}; let watch=[], events=[]; let rankFilter='apple', calFilter='all
 
 function showTab(t){$$('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$$('section.view').forEach(s=>s.hidden=(s.id!=='view-'+t));try{localStorage.setItem('tab',t)}catch(e){}}
 $$('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
-(function(){let t='watch';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(watch|rank|cal)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
+(function(){let t='watch';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(watch|rank|cal|flow|val|ind|ccu)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
 
 function deltaHTML(d,hasPrev){
   if(!hasPrev)return '';
@@ -298,6 +355,139 @@ function renderCal(){
       <td class="name">${esc(e.title)}</td><td class="pub">${esc(e.org||'')}</td><td class="note">${esc(e.note||'')}</td><td><span class="conf ${e.conf==='예상'?'est':''}">${esc(e.conf||'')}</span></td></tr>`;}).join('')}
     </tbody></table></div></div>`).join('');
 }
+
+
+/* ================= 수급 · 밸류에이션 · 산업 · 스팀 동접 ================= */
+const fmt={
+  n:(v,d=0)=>v==null||isNaN(v)?'–':Number(v).toLocaleString('ko-KR',{maximumFractionDigits:d,minimumFractionDigits:d}),
+  pct:(v,d=1)=>v==null||isNaN(v)?'–':(v>0?'+':'')+Number(v).toFixed(d)+'%',
+  signed:(v,d=0)=>v==null||isNaN(v)?'–':(v>0?'+':'')+Number(v).toLocaleString('ko-KR',{maximumFractionDigits:d}),
+  krwBig:v=>{if(v==null)return '–';const jo=v/1e12;return jo>=1?jo.toFixed(1)+'조':(v/1e8).toFixed(0)+'억';},
+  ccyBig:(v,ccy)=>{if(v==null)return '–';const b=v/1e9;return (ccy==='USD'?'$':ccy==='HKD'?'HK$':ccy==='JPY'?'¥':ccy==='EUR'?'€':ccy==='PLN'?'zł':'')+(b>=100?b.toFixed(0):b.toFixed(1))+'B';},
+  px:(v,ccy)=>v==null?'–':(ccy==='KRW'||!ccy?Number(v).toLocaleString('ko-KR',{maximumFractionDigits:0}):Number(v).toLocaleString('en-US',{maximumFractionDigits:v<20?2:v<1000?1:0})),
+  compact:v=>v==null?'–':v>=1e6?(v/1e6).toFixed(2)+'M':v>=1e3?(v/1e3).toFixed(1)+'K':String(v),
+};
+const cls=v=>v==null||isNaN(v)||v===0?'':(v>0?'pos':'neg');
+function spark(vals,{w=120,h=28,zero=false,color='var(--accent)'}={}){
+  const v=(vals||[]).filter(x=>x!=null&&!isNaN(x)); if(v.length<2)return '';
+  let lo=Math.min(...v),hi=Math.max(...v); if(zero){lo=Math.min(lo,0);hi=Math.max(hi,0);} if(hi===lo){hi=lo+1;}
+  const pad=2, X=i=>pad+(i/(v.length-1))*(w-2*pad), Y=x=>pad+(1-(x-lo)/(hi-lo))*(h-2*pad);
+  const pts=v.map((x,i)=>`${X(i).toFixed(1)},${Y(x).toFixed(1)}`).join(' ');
+  const area=`M${X(0).toFixed(1)},${Y(zero?0:lo).toFixed(1)} L${pts.replace(/ /g,' L')} L${X(v.length-1).toFixed(1)},${Y(zero?0:lo).toFixed(1)} Z`;
+  const zl=zero&&lo<0&&hi>0?`<line x1="${pad}" x2="${w-pad}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`:'';
+  const last=v[v.length-1]; const c=zero?(last>=0?'var(--up)':'var(--down)'):color;
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">${zl}<path d="${area}" fill="${c}" opacity=".1"/><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(v.length-1).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="2.5" fill="${c}" stroke="var(--panel)" stroke-width="1.5"/></svg>`;
+}
+function recLabel(m,n){if(m==null)return '<span class="rec">–</span>';const t=m<=1.6?'강력매수':m<=2.5?'매수':m<=3.5?'보유':m<=4.5?'매도':'강력매도';const k=m<=2.5?'buy':m>3.5?'sell':'';return `<span class="rec ${k}">${t} ${m.toFixed(1)}</span>${n?`<span class="pub"> (${n})</span>`:''}`;}
+
+/* ---------- 수급 ---------- */
+let market=null;
+function flowKRW(r,k,n){ // Σ shares×close over last n days, in 억원
+  if(!r.flows)return null; let s=0; for(const f of r.flows.slice(0,n)){ if(f[k]!=null&&f.close!=null)s+=f[k]*f.close; } return s/1e8;
+}
+function renderFlow(){
+  if(!market){return;}
+  $('#flow-stamp').textContent='기준 '+(market.kr.find(r=>r.asOf)?.asOf||'')+' · 수집 '+fmtStamp(market.generatedAt);
+  const rows=market.kr.map(r=>({r,f1:flowKRW(r,'frgn',1),f5:flowKRW(r,'frgn',5),f20:flowKRW(r,'frgn',20),i1:flowKRW(r,'inst',1),i5:flowKRW(r,'inst',5),i20:flowKRW(r,'inst',20)})).sort((a,b)=>(b.f5??-1e18)-(a.f5??-1e18));
+  const tot=k=>rows.reduce((s,x)=>s+(x[k]||0),0);
+  const top=rows[0], bot=rows[rows.length-1];
+  $('#flow-tiles').innerHTML=[
+    ['커버리지 외인 5일 순매수 합계',fmt.signed(tot('f5'))+'억',cls(tot('f5'))],
+    ['커버리지 기관 5일 순매수 합계',fmt.signed(tot('i5'))+'억',cls(tot('i5'))],
+    ['외인 5일 최대 순매수',top?`${top.r.name} ${fmt.signed(top.f5)}억`:'–','pos'],
+    ['외인 5일 최대 순매도',bot?`${bot.r.name} ${fmt.signed(bot.f5)}억`:'–','neg'],
+  ].map(([l,v,c])=>`<div class="tile"><div class="l">${l}</div><div class="v ${c}" style="font-size:18px">${v}</div></div>`).join('');
+  $('#flow-body').innerHTML=rows.map(({r,f1,f5,f20,i1,i5,i20})=>{
+    const cum=[];let c=0;for(const f of (r.flows||[]).slice(0,20).reverse()){c+=(f.frgn||0)*(f.close||0)/1e8;cum.push(c);}
+    const cell=v=>`<td class="num ${cls(v)}">${fmt.signed(v)}</td>`;
+    return `<tr><td class="name">${esc(r.name)}<div class="pub">${r.code} · ${esc(r.sector)}</div></td><td class="num">${fmt.px(r.price,'KRW')}</td><td class="num ${cls(r.chgPct)}">${fmt.pct(r.chgPct)}</td><td class="num">${fmt.krwBig(r.mcap)}</td>${cell(f1)}${cell(f5)}${cell(f20)}${cell(i1)}${cell(i5)}${cell(i20)}<td class="num">${r.frgnRate!=null?r.frgnRate.toFixed(2)+'%':'–'}</td><td>${spark(cum,{zero:true})}</td></tr>`;}).join('');
+}
+
+/* ---------- 밸류에이션 ---------- */
+let valFilter='kr';
+function renderValChips(){
+  $('#val-chips').innerHTML=[['kr','국내 커버리지'],['global','글로벌 피어']].map(([k,l])=>`<button class="chip" data-v="${k}" aria-pressed="${valFilter===k}">${l}</button>`).join('');
+  $$('#val-chips .chip').forEach(b=>b.addEventListener('click',()=>{valFilter=b.dataset.v;renderValChips();renderVal();}));
+}
+function renderVal(){
+  if(!market)return;
+  $('#val-stamp').textContent='수집 '+fmtStamp(market.generatedAt);
+  const list=valFilter==='kr'?market.kr:market.global;
+  const med=arr=>{const a=arr.filter(x=>x!=null&&isFinite(x)&&x>0).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:null;};
+  const mF=med(list.map(r=>r.fwdPer)), mT=med(list.map(r=>r.per)), mB=med(list.map(r=>r.pbr)), mE=med(list.map(r=>r.evEbitda));
+  const x=v=>v==null||!isFinite(v)?'–':v<0?'적자':v.toFixed(1)+'x';
+  const rows=list.map(r=>`<tr><td class="name">${esc(r.name)}<div class="pub">${r.code?r.code+' · '+esc(r.sector):r.sym+' · '+esc(r.region)}</div></td>
+    <td class="num">${fmt.px(r.price,r.ccy)}</td><td class="num ${cls(r.chgPct)}">${fmt.pct(r.chgPct)}</td><td class="num ${cls(r.ret?.m1)}">${fmt.pct(r.ret?.m1,0)}</td><td class="num ${cls(r.ret?.m3)}">${fmt.pct(r.ret?.m3,0)}</td><td class="num ${cls(r.ret?.ytd)}">${fmt.pct(r.ret?.ytd,0)}</td>
+    <td class="num">${r.ccy==='KRW'?fmt.krwBig(r.mcap):fmt.ccyBig(r.mcap,r.ccy)}</td><td class="num">${x(r.per)}</td><td class="num">${x(r.fwdPer)}</td><td class="num">${x(r.pbr)}</td><td class="num">${x(r.evEbitda)}</td>
+    <td class="num">${fmt.px(r.target,r.ccy)}</td><td class="num ${cls(r.upside)}">${fmt.pct(r.upside,0)}</td><td>${recLabel(r.recMean,r.nAnalysts)}</td><td>${spark(r.spark)}</td></tr>`).join('');
+  $('#val-body').innerHTML=rows+`<tr><td class="name" style="color:var(--muted)">중간값</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="num">${x(mT)}</td><td class="num">${x(mF)}</td><td class="num">${x(mB)}</td><td class="num">${x(mE)}</td><td colspan="4"></td></tr>`;
+}
+renderValChips();
+
+/* ---------- 산업데이터 (KOSIS 온라인쇼핑) ---------- */
+function renderInd(k){
+  const tiles=$('#ind-tiles'), chart=$('#ind-chart'), body=$('#ind-body');
+  if(!k||!k.series||!Object.keys(k.series).length){tiles.innerHTML='';chart.innerHTML='<div class="empty">통계청 데이터가 아직 수집되지 않았습니다. KOSIS OpenAPI 키가 등록되면 매주 월요일 자동 수집됩니다.</div>';body.innerHTML='<tr><td colspan="7" class="empty">–</td></tr>';return;}
+  $('#ind-stamp').textContent=(k.table?.name||'')+' · 수집 '+fmtStamp(k.generatedAt);
+  const S=Object.values(k.series);
+  const isTotalC1=s=>/^(합계|계|총계|전체)$/.test((s.c1||'').trim());
+  const media=s=>{const c=(s.c2||'').trim();return /모바일/.test(c)?'mobile':/인터넷/.test(c)?'internet':/^(합계|계|총계|전체)$|^$/.test(c)?'total':'other';};
+  const amt=s=>/거래액/.test(s.itm||'')&&!/증감|비중|구성비/.test(s.itm||'');
+  const tot=S.find(s=>isTotalC1(s)&&media(s)==='total'&&amt(s))||S.find(s=>isTotalC1(s)&&amt(s));
+  const mob=S.find(s=>isTotalC1(s)&&media(s)==='mobile'&&amt(s));
+  if(!tot){chart.innerHTML='<div class="empty">거래액 시계열을 찾지 못했습니다 (표 구조 확인 필요).</div>';body.innerHTML='';return;}
+  const unitDiv=/백만/.test(tot.unit)?1e6:/천/.test(tot.unit)?1e3:/억/.test(tot.unit)?1e8:1; // → 원
+  const toJo=v=>v*unitDiv/1e12;
+  const P=tot.points, last=P[P.length-1], yoy=P.find(p=>p[0]===ym(last[0],-12)), mom=P[P.length-2];
+  function ym(s,d){const [y,m]=s.split('-').map(Number);const t=new Date(Date.UTC(y,m-1+d,1));return t.toISOString().slice(0,7);}
+  const mobLast=mob?.points.find(p=>p[0]===last[0]);
+  const y=(a,b)=>a&&b?(a[1]/b[1]-1)*100:null;
+  tiles.innerHTML=[
+    [`온라인쇼핑 거래액 (${last[0]})`,toJo(last[1]).toFixed(2)+'조원',fmt.pct(y(last,yoy))+' YoY',cls(y(last,yoy))],
+    ['전월 대비',fmt.pct(y(last,mom)),'',cls(y(last,mom))],
+    ['모바일 비중',mobLast?(mobLast[1]/last[1]*100).toFixed(1)+'%':'–',mob?fmt.pct(y(mobLast,mob.points.find(p=>p[0]===ym(last[0],-12))))+' 모바일 YoY':'',''],
+    ['12개월 누적',toJo(P.slice(-12).reduce((s,p)=>s+p[1],0)).toFixed(1)+'조원','',''],
+  ].map(([l,v,d,c])=>`<div class="tile"><div class="l">${l}</div><div class="v">${v}</div><div class="d ${c}">${d}</div></div>`).join('');
+  // chart: 24 months, total vs mobile
+  const pts=P.slice(-24), mpts=mob?mob.points.filter(p=>pts.some(q=>q[0]===p[0])):[];
+  const W=720,H=220,L=48,R=12,T=12,B=28; const xs=pts.map((p,i)=>L+i*(W-L-R)/(pts.length-1));
+  const vmax=Math.max(...pts.map(p=>toJo(p[1])),...mpts.map(p=>toJo(p[1])))*1.08, vmin=0;
+  const Y=v=>T+(1-(v-vmin)/(vmax-vmin))*(H-T-B);
+  const ticks=[];const step=vmax>20?5:vmax>8?2:1;for(let v=0;v<=vmax;v+=step)ticks.push(v);
+  const line=(arr,color)=>`<polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" points="${arr.map((p,i)=>`${xs[pts.findIndex(q=>q[0]===p[0])].toFixed(1)},${Y(toJo(p[1])).toFixed(1)}`).join(' ')}"/>`;
+  const endDot=(arr,color)=>{const p=arr[arr.length-1];const i=pts.findIndex(q=>q[0]===p[0]);return `<circle cx="${xs[i]}" cy="${Y(toJo(p[1]))}" r="4" fill="${color}" stroke="var(--panel)" stroke-width="2"/><text x="${xs[i]-4}" y="${Y(toJo(p[1]))-8}" text-anchor="end" style="fill:var(--fg)">${toJo(p[1]).toFixed(1)}</text>`;};
+  chart.innerHTML=`<div class="legend"><span><i style="background:var(--accent)"></i>전체 거래액 (조원)</span>${mob?'<span><i style="background:var(--new)"></i>모바일</span>':''}</div><div class="chart"><svg viewBox="0 0 ${W} ${H}">
+    ${ticks.map(v=>`<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`).join('')}
+    ${pts.map((p,i)=>i%3===0||i===pts.length-1?`<text x="${xs[i]}" y="${H-8}" text-anchor="middle">${p[0].slice(2).replace('-','.')}</text>`:'').join('')}
+    ${line(pts,'var(--accent)')}${mob?line(mpts,'var(--new)'):''}${endDot(pts,'var(--accent)')}${mob?endDot(mpts,'var(--new)'):''}</svg></div>`;
+  // table by 상품군 (total media)
+  const cats=S.filter(s=>!isTotalC1(s)&&media(s)==='total'&&amt(s));
+  const rows=cats.map(s=>{const p=s.points,l=p[p.length-1];if(!l)return null;const yo=y(l,p.find(q=>q[0]===ym(l[0],-12)));const mo=y(l,p[p.length-2]);
+    const yos=[0,1,2].map(i=>{const a=p[p.length-1-i];return a?y(a,p.find(q=>q[0]===ym(a[0],-12))):null;}).filter(v=>v!=null);const avg=yos.length?yos.reduce((a,b)=>a+b,0)/yos.length:null;
+    const ms=S.find(t=>t.c1===s.c1&&media(t)==='mobile'&&amt(t));const ml=ms?.points.find(q=>q[0]===l[0]);
+    return {name:s.c1,last:toJo(l[1]),yo,mo,avg,mshare:ml?ml[1]/l[1]*100:null,sp:p.slice(-24).map(q=>toJo(q[1]))};}).filter(Boolean).sort((a,b)=>b.last-a.last);
+  body.innerHTML=rows.map(r=>`<tr><td class="name">${esc(r.name)}</td><td class="num">${r.last.toFixed(2)}조</td><td class="num ${cls(r.yo)}">${fmt.pct(r.yo)}</td><td class="num ${cls(r.mo)}">${fmt.pct(r.mo)}</td><td class="num ${cls(r.avg)}">${fmt.pct(r.avg)}</td><td class="num">${r.mshare!=null?r.mshare.toFixed(0)+'%':'–'}</td><td>${spark(r.sp)}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">상품군 데이터 없음</td></tr>';
+}
+
+/* ---------- 스팀 동접 ---------- */
+function renderCcu(d){
+  const body=$('#ccu-body');
+  if(!d||!d.series){body.innerHTML='<tr><td colspan="8" class="empty">아직 수집된 동접 데이터가 없습니다 (매시 수집).</td></tr>';return;}
+  $('#ccu-stamp').textContent='수집 '+fmtStamp(d.generatedAt);
+  const now=Math.floor(Date.now()/60000);
+  const rows=d.apps.map(a=>{const s=d.series[a.appid]||[];const cur=s[s.length-1]?.[1]??null;
+    const win=(from,to)=>s.filter(([t])=>t>now-from&&t<=now-to).map(x=>x[1]);
+    const p24=win(1440,0), w7=win(7*1440,0), w14=win(14*1440,7*1440), m30=win(30*1440,0);
+    const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null; const mx=a=>a.length?Math.max(...a):null;
+    const a7=avg(w7),a14=avg(w14); return {a,cur,p24:mx(p24),a7,wow:a7&&a14?(a7/a14-1)*100:null,p30:mx(m30),sp:s.slice(-720).map(x=>x[1])};}).sort((x,y)=>(y.cur??-1)-(x.cur??-1));
+  body.innerHTML=rows.map(r=>`<tr><td class="name">${esc(r.a.name)}<div class="pub">appid ${r.a.appid}</div></td><td class="pub">${esc(r.a.co)}</td><td class="num"><b>${fmt.n(r.cur)}</b></td><td class="num">${fmt.n(r.p24)}</td><td class="num">${fmt.n(r.a7)}</td><td class="num ${cls(r.wow)}">${fmt.pct(r.wow)}</td><td class="num">${fmt.n(r.p30)}</td><td>${spark(r.sp,{w:160})}</td></tr>`).join('');
+}
+
+(async()=>{
+  try{market=await getJSON('data/market.json');renderFlow();renderVal();}catch(e){$('#flow-body').innerHTML='<tr><td colspan="12" class="empty">수급 데이터가 아직 없습니다 (매 거래일 16:40 KST 수집).</td></tr>';$('#val-body').innerHTML='<tr><td colspan="15" class="empty">밸류에이션 데이터가 아직 없습니다.</td></tr>';}
+  try{renderInd(await getJSON('data/kosis.json'));}catch(e){renderInd(null);}
+  try{renderCcu(await getJSON('data/steam_ccu.json'));}catch(e){renderCcu(null);}
+})();
 
 /* ---------- data loading ---------- */
 async function getJSON(u){const r=await fetch(u+'?t='+Math.floor(Date.now()/60000),{cache:'no-store'});if(!r.ok)throw new Error(u+' '+r.status);return r.json();}
