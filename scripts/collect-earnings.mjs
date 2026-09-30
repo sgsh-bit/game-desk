@@ -43,6 +43,9 @@ function parse(j) {
   };
 }
 
+const KEYS = ['rev', 'op', 'np', 'npc', 'opm', 'npm', 'eps', 'roe', 'debt', 'per', 'pbr', 'dps'];
+const QA = path.join(ROOT, 'data', 'history', 'quarters.json');
+const quarterArchive = fs.existsSync(QA) ? JSON.parse(fs.readFileSync(QA, 'utf8')) : {};
 const out = { generatedAt: new Date().toISOString(), unit: '억원', companies: {}, failures: [] };
 for (const c of KR) {
   try {
@@ -54,7 +57,13 @@ for (const c of KR) {
     const a = await get(`https://m.stock.naver.com/api/stock/${c.code}/finance/annual`, c === KR[0] ? 'fin_annual.txt' : null);
     const Q = parse(q), A = parse(a);
     if (!Q.periods.length) throw new Error('no periods');
-    out.companies[c.code] = { name: c.name, sector: c.sector, quarter: Q, annual: A };
+    // merge with archived actual quarters (data/history/quarters.json) so the window grows over time
+    const arch = (quarterArchive[c.code] = quarterArchive[c.code] || {});
+    Q.periods.forEach((p, i) => { if (!p.est) { arch[p.key] = {}; for (const k of KEYS) if (Q[k]?.[i] != null) arch[p.key][k] = Q[k][i]; } });
+    const keys = [...new Set([...Object.keys(arch), ...Q.periods.map(p => p.key)])].sort().slice(-12);
+    const merged = { periods: keys.map(k => Q.periods.find(p => p.key === k) || { key: k, label: `${k.slice(0, 4)}.${k.slice(4)}`, est: false }) };
+    for (const m of KEYS) merged[m] = keys.map(k => { const i = Q.periods.findIndex(p => p.key === k); return i >= 0 ? Q[m]?.[i] ?? null : arch[k]?.[m] ?? null; });
+    out.companies[c.code] = { name: c.name, sector: c.sector, quarter: merged, annual: A };
   } catch (e) {
     out.failures.push(`${c.code}: ${e.message.slice(0, 120)}`);
     if (prev.companies?.[c.code]) out.companies[c.code] = prev.companies[c.code];
@@ -74,5 +83,6 @@ for (const [code, c] of Object.entries(out.companies)) {
   for (const d of Object.keys(hist[code]).sort().slice(0, -90)) delete hist[code][d];
 }
 fs.writeFileSync(HP, JSON.stringify(hist) + '\n');
+fs.writeFileSync(QA, JSON.stringify(quarterArchive) + '\n');
 fs.writeFileSync(OUT, JSON.stringify(out) + '\n');
 console.log(`earnings: ${Object.keys(out.companies).length} companies, failures ${out.failures.length}`, out.failures.slice(0, 3));
