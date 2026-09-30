@@ -30,16 +30,27 @@ function parse(j) {
     periods,
     rev: series(pick(/^매출액$|^영업수익$|^순영업수익$/)),
     op: series(pick(/^영업이익$/)),
-    np: series(pick(/^당기순이익$|지배주주순이익/)),
+    np: series(pick(/^당기순이익$/)),
+    npc: series(pick(/지배주주순이익/)),
     opm: series(pick(/^영업이익률$/)),
+    npm: series(pick(/^순이익률$/)),
     eps: series(pick(/^EPS/)),
+    roe: series(pick(/^ROE/)),
+    debt: series(pick(/^부채비율/)),
+    per: series(pick(/^PER/)),
+    pbr: series(pick(/^PBR/)),
+    dps: series(pick(/^주당배당금|^DPS/)),
   };
 }
 
 const out = { generatedAt: new Date().toISOString(), unit: '억원', companies: {}, failures: [] };
 for (const c of KR) {
   try {
-    const q = await get(`https://m.stock.naver.com/api/stock/${c.code}/finance/quarter`, c === KR[0] ? 'fin_quarter.txt' : null);
+    let q = await get(`https://m.stock.naver.com/api/stock/${c.code}/finance/quarter`, c === KR[0] ? 'fin_quarter.txt' : null);
+    // try to widen the window (more quarters → YoY for every column)
+    for (const extra of ['?count=10', '?size=10', '?periodCount=10']) {
+      try { const q2 = await get(`https://m.stock.naver.com/api/stock/${c.code}/finance/quarter${extra}`); if ((q2.financeInfo?.trTitleList || []).length > (q.financeInfo?.trTitleList || []).length) { q = q2; if (c === KR[0]) console.log('wider quarter window via', extra); break; } } catch {}
+    }
     const a = await get(`https://m.stock.naver.com/api/stock/${c.code}/finance/annual`, c === KR[0] ? 'fin_annual.txt' : null);
     const Q = parse(q), A = parse(a);
     if (!Q.periods.length) throw new Error('no periods');
