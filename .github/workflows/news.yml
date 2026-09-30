@@ -2,7 +2,7 @@ name: collect-news
 
 on:
   schedule:
-    - cron: "5 */3 * * *"     # every 3 hours
+    - cron: "5 * * * *"       # hourly (news, macro, DART)
   workflow_dispatch:
 
 permissions:
@@ -21,8 +21,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - run: npm ci
       - name: News
         run: node scripts/collect-news.mjs
+      - name: Macro
+        run: node scripts/collect-macro.mjs
+      - name: DART
+        env:
+          OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
+        run: node scripts/collect-dart.mjs
       - name: Reports
         run: node scripts/collect-reports.mjs
       - name: Commit data
@@ -31,7 +38,7 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add data
           if git diff --cached --quiet; then echo "no changes"; else
-            git commit -m "data: news/reports $(date -u +'%Y-%m-%dT%H:%MZ')"
+            git commit -m "data: news/macro/dart $(date -u +'%Y-%m-%dT%H:%MZ')"
             git pull --rebase -X theirs origin main || true
             git push
           fi

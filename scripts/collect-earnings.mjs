@@ -1,0 +1,54 @@
+// 실적 컨센서스 (네이버증권 분기/연간 재무 — 확정치 + FnGuide 컨센서스 추정치 E) → data/earnings.json
+import fs from 'node:fs';
+import path from 'node:path';
+import { KR } from './universe.mjs';
+
+const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
+const OUT = path.join(ROOT, 'data', 'earnings.json');
+const DBG = path.join(ROOT, 'data', 'debug');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const HDR = { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1', accept: 'application/json', 'accept-language': 'ko-KR,ko;q=0.9', referer: 'https://m.stock.naver.com/' };
+const num = s => { if (s == null) return null; const v = parseFloat(String(s).replace(/[,\s]/g, '')); return Number.isFinite(v) ? v : null; };
+const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : { companies: {} };
+
+async function get(url, dumpName) {
+  const r = await fetch(url, { headers: HDR }); const txt = await r.text();
+  if (dumpName && process.env.DEBUG) { fs.mkdirSync(DBG, { recursive: true }); fs.writeFileSync(path.join(DBG, dumpName), `${r.status} ${url}\n${txt.slice(0, 12000)}`); }
+  if (!r.ok) throw new Error(`${r.status} ${url}`);
+  return JSON.parse(txt);
+}
+
+// Parse Naver finance JSON: { trTitleList:[{isConsensus:'Y'|'N', title:'2026.09.', key:'202609'}], rowList:[{title:'매출액', columns:{'202609':{value:'1,234'}}}] }
+function parse(j) {
+  const fi = j.financeInfo || j;
+  const titles = fi.trTitleList || fi.titleList || [];
+  const rows = fi.rowList || [];
+  const periods = titles.map(t => ({ key: t.key, label: String(t.title || t.key).replace(/\.$/, ''), est: t.isConsensus === 'Y' }));
+  const pick = re => rows.find(r => re.test(String(r.title || '').replace(/\s/g, '')));
+  const series = row => row ? periods.map(p => num(row.columns?.[p.key]?.value)) : periods.map(() => null);
+  return {
+    periods,
+    rev: series(pick(/^매출액$|^영업수익$|^순영업수익$/)),
+    op: series(pick(/^영업이익$/)),
+    np: series(pick(/^당기순이익$|지배주주순이익/)),
+    opm: series(pick(/^영업이익률$/)),
+    eps: series(pick(/^EPS/)),
+  };
+}
+
+const out = { generatedAt: new Date().toISOString(), unit: '억원', companies: {}, failures: [] };
+for (const c of KR) {
+  try {
+    const q = await get(`https://m.stock.naver.com/api/stock/${c.code}/finance/quarter`, c === KR[0] ? 'fin_quarter.txt' : null);
+    const a = await get(`https://m.stock.naver.com/api/stock/${c.code}/finance/annual`, c === KR[0] ? 'fin_annual.txt' : null);
+    const Q = parse(q), A = parse(a);
+    if (!Q.periods.length) throw new Error('no periods');
+    out.companies[c.code] = { name: c.name, sector: c.sector, quarter: Q, annual: A };
+  } catch (e) {
+    out.failures.push(`${c.code}: ${e.message.slice(0, 120)}`);
+    if (prev.companies?.[c.code]) out.companies[c.code] = prev.companies[c.code];
+  }
+  await sleep(400);
+}
+fs.writeFileSync(OUT, JSON.stringify(out) + '\n');
+console.log(`earnings: ${Object.keys(out.companies).length} companies, failures ${out.failures.length}`, out.failures.slice(0, 3));
