@@ -22,3 +22,7 @@
 - 실적 `data/earnings.json` ← 네이버증권 분기/연간 재무(FnGuide 컨센서스 E 포함), 평일 18:10
 - 공시 `data/dart.json` ← OpenDART (Secret `OPENDART_API_KEY`), 매시
 - 매크로 `data/macro.json` ← 지수·환율·금리 (야후), 매시
+- 브리핑 탭: 수급·순위 변동·일정·실적 임박·공시·리포트·동접을 한 화면 + 텔레그램 복사 (클라이언트 계산, 별도 수집 없음)
+- 캘린더 구독: `data/events.ics` (Outlook/Google "URL로 구독")
+- 히스토리: `data/history/valuation.json`(목표가·추정PER 일별), `data/history/consensus.json`(분기 OP 컨센 일별) → 1M 변화 컬럼
+- 워치리스트 "내 게임 추가": 보는 사람 브라우저(localStorage)에만 저장

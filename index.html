@@ -95,8 +95,9 @@ tr.kr .pub{color:var(--kr-ink)}
 
 /* watchlist */
 .wl-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.wl-add{display:none;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:12px;border-top:1px solid var(--line);background:var(--bg)}
-.wl-add.open{display:flex}
+.wl-add{gap:8px;flex-wrap:wrap;align-items:flex-end;padding:12px;background:var(--bg)}
+.wl-add.open{display:flex!important}
+.mine-tag{display:inline-block;font-size:10px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:1px}
 .field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--fg2);min-width:0}
 .field input,.field select,.field textarea{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel);min-width:0}
 .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
@@ -237,7 +238,15 @@ tr.sel td{background:var(--accent-soft)}
   <div class="sec-head"><h2>관심 게임 순위</h2><span class="sub">스토어별 최고매출 순위 · 변동은 전일 스냅샷 대비 (▲상승=빨강, ▼하락=파랑, N=신규 진입)</span></div>
   <div class="wl-tools">
     <button class="btn" id="wl-copy">텔레그램용 복사</button>
+    <button class="btn" id="wl-mine">+ 내 게임 추가</button>
     <span class="help" id="wl-stamp"></span>
+  </div>
+  <div class="panel wl-add" id="wl-add" style="display:none;margin-bottom:10px;border-radius:8px">
+    <label class="field">표시명<input id="wl-name" placeholder="예: 원신" style="width:150px"></label>
+    <label class="field">회사<input id="wl-co" placeholder="예: HoYoverse" style="width:130px"></label>
+    <label class="field" style="flex:1 1 240px">매칭 키워드 (쉼표 구분: 앱 이름 일부 · 패키지명 · 스팀 appid)<input id="wl-keys" placeholder="원신, Genshin, com.miHoYo.GenshinImpact"></label>
+    <button class="btn primary" id="wl-save">추가</button><button class="btn" id="wl-cancel">취소</button>
+    <span class="help" style="flex-basis:100%">이 브라우저에만 저장됩니다(다른 사람에게는 보이지 않음).</span>
   </div>
   <div class="panel"><div class="tablewrap"><table id="wl-table">
     <thead><tr>
@@ -255,6 +264,7 @@ tr.sel td{background:var(--accent-soft)}
 <section class="view" id="view-rank" hidden>
   <div class="sec-head"><h2>스토어 최고매출 순위</h2><span class="sub">국내 상장사 타이틀은 노란 배경 · 변동은 전일 대비</span><span class="spacer"></span>
     <label class="chip" style="cursor:pointer"><input type="checkbox" id="rank-kronly" style="vertical-align:-1px;margin:0 5px 0 0">국내사만</label></div>
+  <div class="tiles" id="rank-tiles"></div>
   <div class="chips" id="rank-chips" style="margin-bottom:12px"></div>
   <div class="rank-grid" id="rank-grid"></div>
 </section>
@@ -286,9 +296,9 @@ tr.sel td{background:var(--accent-soft)}
   <div class="chips" id="val-chips" style="margin-bottom:12px"></div>
   <div class="panel"><div class="tablewrap"><table id="val-table">
     <thead><tr><th>종목</th><th class="num">주가</th><th class="num">1D</th><th class="num">1M</th><th class="num">3M</th><th class="num">YTD</th><th class="num">시총</th>
-      <th class="num">PER(T)</th><th class="num">PER(F)</th><th class="num">PBR</th><th class="num">EV/EBITDA</th><th class="num">목표가</th><th class="num">상승여력</th><th>투자의견</th><th>60일</th></tr></thead>
-    <tbody id="val-body"><tr><td colspan="15" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
-  <p class="help">국내 PER(T)·PBR은 최근 결산 기준(네이버증권), PER(F)는 국내 = 당해연도 추정 PER(FnGuide 컨센서스), 해외 = 12M forward(LSEG). 투자의견 척도 1(강력매수)~5(매도), 괄호는 커버 애널리스트 수. 시총: 원화 조원 / 해외는 현지통화 십억. 소형주는 컨센서스가 없을 수 있음(–).</p>
+      <th class="num">PER(T)</th><th class="num">PER(F)</th><th class="num">PBR</th><th class="num">EV/EBITDA</th><th class="num">목표가</th><th class="num">1M 변화</th><th class="num">상승여력</th><th>투자의견</th><th>60일</th></tr></thead>
+    <tbody id="val-body"><tr><td colspan="16" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">1M 변화 = 목표주가 컨센서스의 30일 전 대비 변화(일별 스냅샷 축적 후 표시). 국내 PER(T)·PBR은 최근 결산 기준(네이버증권), PER(F)는 국내 = 당해연도 추정 PER(FnGuide 컨센서스), 해외 = 12M forward(LSEG). 투자의견 척도 1(강력매수)~5(매도), 괄호는 커버 애널리스트 수. 시총: 원화 조원 / 해외는 현지통화 십억. 소형주는 컨센서스가 없을 수 있음(–).</p>
 </section>
 
 <section class="view" id="view-earn" hidden>
@@ -296,10 +306,10 @@ tr.sel td{background:var(--accent-soft)}
   <div class="wl-tools"><button class="btn" id="earn-copy">텔레그램용 복사</button><span class="help">다음 분기 컨센서스와 실적발표 예정일을 한 번에 봅니다.</span></div>
   <div class="panel"><div class="tablewrap"><table id="earn-table">
     <thead><tr><th>종목</th><th>발표 예정</th>
-      <th class="num" colspan="3">최근 확정 분기</th><th class="num" colspan="4">다음 분기 컨센서스</th><th class="num" colspan="3">연간 컨센서스</th><th>분기 영업이익</th></tr>
-      <tr class="sub-h"><th></th><th></th><th class="num">분기</th><th class="num">매출</th><th class="num">영업이익</th><th class="num">분기</th><th class="num">매출E</th><th class="num">영업이익E</th><th class="num">OP YoY</th><th class="num">전년 OP</th><th class="num">올해 OP E</th><th class="num">OP 성장</th><th></th></tr></thead>
-    <tbody id="earn-body"><tr><td colspan="13" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
-  <p class="help">E = 컨센서스 추정치(네이버증권·FnGuide). 막대 차트는 최근 분기 영업이익, 옅은 막대가 추정치. 발표 예정일은 이벤트 캘린더에서 연결되며 "예상"일 수 있습니다.</p>
+      <th class="num" colspan="3">최근 확정 분기</th><th class="num" colspan="5">다음 분기 컨센서스</th><th class="num" colspan="3">연간 컨센서스</th><th>분기 영업이익</th></tr>
+      <tr class="sub-h"><th></th><th></th><th class="num">분기</th><th class="num">매출</th><th class="num">영업이익</th><th class="num">분기</th><th class="num">매출E</th><th class="num">영업이익E</th><th class="num">1M 변화</th><th class="num">OP YoY</th><th class="num">전년 OP</th><th class="num">올해 OP E</th><th class="num">OP 성장</th><th></th></tr></thead>
+    <tbody id="earn-body"><tr><td colspan="14" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">1M 변화 = 다음 분기 영업이익 컨센서스의 30일 전 대비 변화(같은 분기 기준, 일별 스냅샷 축적 후 표시). E = 컨센서스 추정치(네이버증권·FnGuide). 막대 차트는 최근 분기 영업이익, 옅은 막대가 추정치. 발표 예정일은 이벤트 캘린더에서 연결되며 "예상"일 수 있습니다.</p>
 </section>
 
 <section class="view" id="view-dart" hidden>
@@ -378,6 +388,9 @@ const KR_PUB=/nexon|넥슨|netmarble|넷마블|ncsoft|nc corp|엔씨|kakao ?game
 function isKR(it){return KR_PUB.test([it.n,it.p,it.id,it.bid].filter(Boolean).join(' '));}
 
 const charts={}; let watch=[], events=[]; let rankFilter='apple', calFilter='all';
+let mine=[]; try{mine=JSON.parse(localStorage.getItem('myWatch')||'[]');}catch(e){}
+function saveMine(){try{localStorage.setItem('myWatch',JSON.stringify(mine));}catch(e){}}
+function allWatch(){return [...watch,...mine];}
 
 function showTab(t){$$('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$$('section.view').forEach(s=>s.hidden=(s.id!=='view-'+t));try{localStorage.setItem('tab',t)}catch(e){}}
 $$('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
@@ -393,18 +406,20 @@ function matchItem(it,keys){const hay=[it.n,it.id,it.bid].filter(Boolean).map(s=
 
 function renderWatch(){
   const body=$('#wl-body');
-  if(!watch.length){body.innerHTML='<tr><td colspan="11" class="empty">워치리스트가 비어 있습니다.</td></tr>';return;}
-  body.innerHTML=watch.map(w=>{
+  const W=allWatch();
+  if(!W.length){body.innerHTML='<tr><td colspan="11" class="empty">워치리스트가 비어 있습니다.</td></tr>';return;}
+  body.innerHTML=W.map(w=>{
     const cells=STORES.map(s=>{const doc=charts[s.id];if(!doc||!doc.items)return '<td class="num"><span class="cell"><span class="r none">·</span></span></td>';
       const hit=doc.items.find(it=>matchItem(it,w.keys));if(!hit)return '<td class="num"><span class="cell"><span class="r none">–</span></span></td>';
       return `<td class="num"><span class="cell"><span class="r">${hit.r}</span>${deltaHTML(hit.d,!!doc.prevDate)}</span></td>`;}).join('');
-    return `<tr class="${wlSel===w.id?'sel':''}"><td class="name"><span class="wl-name" data-w="${esc(w.id)}" role="button" tabindex="0">${esc(w.name)}</span></td><td class="pub">${esc(w.co||'')}</td>${cells}</tr>`;}).join('');
+    return `<tr class="${wlSel===w.id?'sel':''}"><td class="name"><span class="wl-name" data-w="${esc(w.id)}" role="button" tabindex="0">${esc(w.name)}</span>${w.mine?`<span class="mine-tag">내 추가</span><button class="icon" data-delmine="${esc(w.id)}" title="삭제">✕</button>`:''}</td><td class="pub">${esc(w.co||'')}</td>${cells}</tr>`;}).join('');
+  body.querySelectorAll('[data-delmine]').forEach(b=>b.addEventListener('click',()=>{mine=mine.filter(m=>m.id!==b.dataset.delmine);saveMine();renderWatch();}));
   const stamps=STORES.map(s=>charts[s.id]?.fetchedAt).filter(Boolean).sort();
   $('#wl-stamp').textContent=stamps.length?`최종 수집 ${fmtStamp(stamps[stamps.length-1])}`:'';
 }
 $('#wl-copy').addEventListener('click',()=>{
   const lines=[`[게임 매출순위 워치] ${todayKST().replace(/-/g,'.')}`,'(Apple KR|JP|US|CN / Google KR|JP|US / Steam KR|Global · 괄호=전일비)'];
-  watch.forEach(w=>{const parts=STORES.map(s=>{const doc=charts[s.id];if(!doc||!doc.items)return '·';const hit=doc.items.find(it=>matchItem(it,w.keys));if(!hit)return '–';let d='';if(doc.prevDate){d=hit.d==null?'(N)':(hit.d===0?'(-)':(hit.d>0?`(+${hit.d})`:`(${hit.d})`));}return hit.r+d;});
+  allWatch().forEach(w=>{const parts=STORES.map(s=>{const doc=charts[s.id];if(!doc||!doc.items)return '·';const hit=doc.items.find(it=>matchItem(it,w.keys));if(!hit)return '–';let d='';if(doc.prevDate){d=hit.d==null?'(N)':(hit.d===0?'(-)':(hit.d>0?`(+${hit.d})`:`(${hit.d})`));}return hit.r+d;});
     lines.push(`・${w.name}${w.co?' ('+w.co+')':''} → ${parts.slice(0,4).join('|')} / ${parts.slice(4,7).join('|')} / ${parts.slice(7).join('|')}`);});
   const txt=lines.join('\n'); const done=()=>toast('복사됨');
   const fallback=()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('복사 실패');}ta.remove();};
@@ -416,7 +431,16 @@ function renderRankChips(){
   $('#rank-chips').innerHTML=groups.map(g=>`<button class="chip" data-g="${g.k}" aria-pressed="${rankFilter===g.k}">${g.l}</button>`).join('');
   $$('#rank-chips .chip').forEach(b=>b.addEventListener('click',()=>{rankFilter=b.dataset.g;renderRankChips();renderRank();}));
 }
+function renderRankTiles(){
+  const list=STORES.filter(s=>s.id.startsWith(rankFilter));
+  $('#rank-tiles').innerHTML=list.map(s=>{const doc=charts[s.id];if(!doc||!doc.items)return '';
+    const kr=doc.items.filter(isKR);const top10=kr.filter(it=>it.r<=10).length;
+    const prevKr=doc.prevDate?kr.filter(it=>it.d!=null).length:null; const newKr=doc.prevDate?kr.filter(it=>it.d==null).length:0;
+    const best=kr[0];
+    return `<div class="tile"><div class="l">${esc(s.label)} · 국내사</div><div class="v" style="font-size:18px">${kr.length}<span class="pub" style="font-size:12px;font-weight:400"> / ${doc.items.length}개 (Top10 ${top10})</span></div><div class="d">${best?`최상위 ${esc(best.n)} ${best.r}위`:'해당 없음'}${newKr?` · 신규 ${newKr}`:''}</div></div>`;}).join('');
+}
 function renderRank(){
+  renderRankTiles();
   const krOnly=$('#rank-kronly').checked;
   $('#rank-grid').innerHTML=STORES.filter(s=>s.id.startsWith(rankFilter)).map(s=>{
     const doc=charts[s.id]; let body;
@@ -506,7 +530,8 @@ function renderFlow(){
 }
 
 /* ---------- 밸류에이션 ---------- */
-let valFilter='kr';
+let valFilter='kr', valHist=null;
+function tpChange(r){const k=r.code||r.sym;const h=valHist?.[k];if(!h)return null;const ds=Object.keys(h).sort();if(ds.length<2)return null;const t=todayKST();const base=ds.filter(d=>d<=addDays(t,-30)).pop()||ds[0];const a=h[base]?.tp,b=r.target;if(!a||!b||base===ds[ds.length-1])return null;return {pct:(b/a-1)*100,since:base};}
 function renderValChips(){
   $('#val-chips').innerHTML=[['kr','국내 커버리지'],['global','글로벌 피어']].map(([k,l])=>`<button class="chip" data-v="${k}" aria-pressed="${valFilter===k}">${l}</button>`).join('');
   $$('#val-chips .chip').forEach(b=>b.addEventListener('click',()=>{valFilter=b.dataset.v;renderValChips();renderVal();}));
@@ -521,8 +546,8 @@ function renderVal(){
   const rows=list.map(r=>`<tr><td class="name">${esc(r.name)}<div class="pub">${r.code?r.code+' · '+esc(r.sector):r.sym+' · '+esc(r.region)}</div></td>
     <td class="num">${fmt.px(r.price,r.ccy)}</td><td class="num ${cls(r.chgPct)}">${fmt.pct(r.chgPct)}</td><td class="num ${cls(r.ret?.m1)}">${fmt.pct(r.ret?.m1,0)}</td><td class="num ${cls(r.ret?.m3)}">${fmt.pct(r.ret?.m3,0)}</td><td class="num ${cls(r.ret?.ytd)}">${fmt.pct(r.ret?.ytd,0)}</td>
     <td class="num">${r.ccy==='KRW'?fmt.krwBig(r.mcap):fmt.ccyBig(r.mcap,r.ccy)}</td><td class="num">${x(r.per)}</td><td class="num">${x(r.cnsPer??r.fwdPer)}</td><td class="num">${x(r.pbr)}</td><td class="num">${x(r.evEbitda)}</td>
-    <td class="num">${fmt.px(r.target,r.ccy)}</td><td class="num ${cls(r.upside)}">${fmt.pct(r.upside,0)}</td><td>${recLabel(r.recMean,r.nAnalysts)}</td><td>${spark(r.spark)}</td></tr>`).join('');
-  $('#val-body').innerHTML=rows+`<tr><td class="name" style="color:var(--muted)">중간값</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="num">${x(mT)}</td><td class="num">${x(mF)}</td><td class="num">${x(mB)}</td><td class="num">${x(mE)}</td><td colspan="4"></td></tr>`;
+    <td class="num">${fmt.px(r.target,r.ccy)}</td><td class="num">${(()=>{const c=tpChange(r);return c?`<span class="${cls(c.pct)}" title="${c.since} 대비">${fmt.pct(c.pct,1)}</span>`:'<span class="pub">–</span>';})()}</td><td class="num ${cls(r.upside)}">${fmt.pct(r.upside,0)}</td><td>${recLabel(r.recMean,r.nAnalysts)}</td><td>${spark(r.spark)}</td></tr>`).join('');
+  $('#val-body').innerHTML=rows+`<tr><td class="name" style="color:var(--muted)">중간값</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="num">${x(mT)}</td><td class="num">${x(mF)}</td><td class="num">${x(mB)}</td><td class="num">${x(mE)}</td><td colspan="5"></td></tr>`;
 }
 renderValChips();
 
@@ -586,6 +611,7 @@ function renderCcu(d){
 }
 
 (async()=>{
+  try{valHist=await getJSON('data/history/valuation.json');}catch(e){}
   try{market=await getJSON('data/market.json');renderFlow();renderVal();if(newsData)renderNews();}catch(e){$('#flow-body').innerHTML='<tr><td colspan="12" class="empty">수급 데이터가 아직 없습니다 (매 거래일 16:40 KST 수집).</td></tr>';$('#val-body').innerHTML='<tr><td colspan="15" class="empty">밸류에이션 데이터가 아직 없습니다.</td></tr>';}
   try{renderInd(await getJSON('data/kosis.json'));}catch(e){renderInd(null);}
   try{ccuData=await getJSON('data/steam_ccu.json');renderCcu(ccuData);}catch(e){renderCcu(null);}
@@ -668,10 +694,15 @@ async function showHist(w){
   box.innerHTML=`<h3>${esc(w.name)} · 스토어별 순위 추이 <span class="stamp">최근 ${dates.length}일 · 위쪽일수록 상위</span></h3><div class="legend" style="flex-wrap:wrap">${series.map(s=>{const l=s.pts.filter(p=>p[1]!=null).pop();return `<span><i style="background:${s.color}"></i>${s.label} ${l[1]}위</span>`;}).join('')}</div><div class="chart"><svg viewBox="0 0 ${W} ${H}">${grid}${xl}${lines}</svg></div>`;
 }
 document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const t=e.target.closest&&e.target.closest('.wl-name');if(t)t.click();});
-document.addEventListener('click',e=>{const t=e.target.closest('.wl-name');if(!t)return;const w=watch.find(x=>x.id===t.dataset.w);if(w)showHist(w);});
+document.addEventListener('click',e=>{const t=e.target.closest('.wl-name');if(!t)return;const w=allWatch().find(x=>x.id===t.dataset.w);if(w)showHist(w);});
+$('#wl-mine').addEventListener('click',()=>{const f=$('#wl-add');f.classList.toggle('open');if(f.classList.contains('open'))$('#wl-name').focus();});
+$('#wl-cancel').addEventListener('click',()=>$('#wl-add').classList.remove('open'));
+$('#wl-save').addEventListener('click',()=>{const name=$('#wl-name').value.trim(),co=$('#wl-co').value.trim();let keys=$('#wl-keys').value.split(',').map(x=>x.trim()).filter(Boolean);if(!name){toast('표시명을 입력하세요');return;}if(!keys.length)keys=[name];
+  mine.push({id:'m'+Date.now().toString(36),name,co,keys,mine:true});saveMine();$('#wl-name').value=$('#wl-co').value=$('#wl-keys').value='';$('#wl-add').classList.remove('open');renderWatch();toast('추가됨 (이 브라우저에만 저장)');});
 
 /* ---------- 실적 · 컨센서스 ---------- */
-let earn=null;
+let earn=null, consHist=null;
+function opChange(code,cur){const h=consHist?.[code];if(!h||cur==null)return null;const ds=Object.keys(h).sort();if(ds.length<2)return null;const t=todayKST();const base=ds.filter(d=>d<=addDays(t,-30)).pop()||ds[0];const a=h[base]?.qOp;if(a==null||base===ds[ds.length-1]||h[base]?.qLab!==h[ds[ds.length-1]]?.qLab)return null;return growth(cur,a);}
 // 성장률: 적자 구간은 흑전/적전/적지로 표기
 function growth(cur,base){if(cur==null||base==null)return null;if(base>0&&cur>0)return (cur/base-1)*100;if(base<=0&&cur>0)return '흑전';if(base>0&&cur<=0)return '적전';return '적지';}
 function gCell(v){if(v==null)return '–';if(typeof v==='string')return `<span class="${v==='흑전'?'pos':v==='적전'?'neg':''}">${v}</span>`;return `<span class="${cls(v)}">${Math.abs(v)>=1000?(v>0?'+':'')+'>999%':fmt.pct(v,0)}</span>`;}
@@ -695,13 +726,13 @@ function earnRows(){
 function bars(Q){const v=Q.op;const n=v.length;if(!n)return '';const w=120,h=30,bw=Math.min(12,(w-4)/n-3);const mx=Math.max(...v.map(x=>Math.abs(x||0)),1);const zero=v.some(x=>x<0)?h/2:h-2;
   return `<svg class="bars" viewBox="0 0 ${w} ${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${zero}" y2="${zero}" stroke="var(--line)"/>${v.map((x,i)=>{if(x==null)return '';const bh=Math.abs(x)/mx*(zero-2);const X=2+i*((w-4)/n);const y=x>=0?zero-bh:zero;return `<rect x="${X}" y="${y}" width="${bw}" height="${Math.max(bh,1)}" rx="2" fill="${x>=0?'var(--accent)':'var(--down)'}" opacity="${Q.periods[i].est?.35:1}"><title>${Q.periods[i].label}${Q.periods[i].est?'E':''} ${fmt.n(x)}억</title></rect>`;}).join('')}</svg>`;}
 function renderEarn(){
-  const body=$('#earn-body'); if(!earn||!Object.keys(earn.companies).length){body.innerHTML='<tr><td colspan="13" class="empty">실적 데이터가 아직 수집되지 않았습니다 (평일 18:10 KST).</td></tr>';return;}
+  const body=$('#earn-body'); if(!earn||!Object.keys(earn.companies).length){body.innerHTML='<tr><td colspan="14" class="empty">실적 데이터가 아직 수집되지 않았습니다 (평일 18:10 KST).</td></tr>';return;}
   $('#earn-stamp').textContent='수집 '+fmtStamp(earn.generatedAt);
   const rows=earnRows().sort((a,b)=>(a.ev?.date||'9999').localeCompare(b.ev?.date||'9999'));
   body.innerHTML=rows.map(r=>`<tr><td class="name">${esc(r.name)}<div class="pub">${r.code} · ${esc(r.sector)}</div></td>
     <td class="date">${r.ev?`${r.ev.date.slice(5).replace('-','/')}<span class="dow">${dowOf(r.ev.date)}</span><div class="conf ${r.ev.conf==='예상'?'est':''}">${esc(r.ev.conf||'')}</div>`:'<span class="pub">–</span>'}</td>
     <td class="num pub">${esc(r.aLab)}</td><td class="num">${eok(r.aRev)}</td><td class="num">${eok(r.aOp)}${r.aOpY!=null?`<div class="delta">${gCell(r.aOpY)}</div>`:''}</td>
-    <td class="num pub">${esc(r.eLab)}${r.nextE>=0?'E':''}</td><td class="num">${eok(r.eRev)}</td><td class="num"><b>${eok(r.eOp)}</b></td><td class="num">${gCell(r.eOpY)}</td>
+    <td class="num pub">${esc(r.eLab)}${r.nextE>=0?'E':''}</td><td class="num">${eok(r.eRev)}</td><td class="num"><b>${eok(r.eOp)}</b></td><td class="num">${(()=>{const c=opChange(r.code,r.eOp);return c==null?'<span class="pub">–</span>':gCell(c);})()}</td><td class="num">${gCell(r.eOpY)}</td>
     <td class="num">${eok(r.nOp)}</td><td class="num"><b>${eok(r.yOp)}</b></td><td class="num">${gCell(r.g)}</td><td>${bars(r.Q)}</td></tr>`).join('');
 }
 $('#earn-copy').addEventListener('click',()=>{
@@ -728,7 +759,8 @@ function renderDart(){
   body.innerHTML=list.map(x=>`<tr><td class="date">${x.date.slice(5).replace('-','/')}<span class="dow">${dowOf(x.date)}</span></td><td class="name">${esc(x.name)}</td><td><span class="tagc" style="--c:${TAGC[x.tag]||'#9AA3B2'}">${esc(x.tag)}</span></td><td><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${esc(x.rcp)}" target="_blank" rel="noopener">${esc(x.title)}</a>${x.rm?` <span class="stamp">${esc(x.rm)}</span>`:''}</td><td class="pub">${esc(x.filer)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">해당 공시 없음</td></tr>';
 }
 (async()=>{
-  try{earn=await getJSON('data/earnings.json');}catch(e){} 
+  try{earn=await getJSON('data/earnings.json');}catch(e){}
+  try{consHist=await getJSON('data/history/consensus.json');}catch(e){}
   try{dart=await getJSON('data/dart.json');}catch(e){}
   const wait=()=>new Promise(r=>{const t=setInterval(()=>{if(events.length){clearInterval(t);r();}},100);setTimeout(()=>{clearInterval(t);r();},4000);});
   await wait(); renderEarn(); renderDart();
@@ -741,7 +773,7 @@ let briefLines=[];
 function movers(){
   const out=[];
   for(const st of STORES){const doc=charts[st.id];if(!doc||!doc.prevDate)continue;
-    for(const it of doc.items){const inWl=watch.some(w=>matchItem(it,w.keys));if(!(isKR(it)||inWl))continue;
+    for(const it of doc.items){const inWl=allWatch().some(w=>matchItem(it,w.keys));if(!(isKR(it)||inWl))continue;
       if(it.d==null&&it.r<=30)out.push({store:st.label,it,kind:'new'});else if(it.d!=null&&Math.abs(it.d)>=5)out.push({store:st.label,it,kind:it.d>0?'up':'down'});}}
   return out.sort((a,b)=>(b.kind==='new'?99:Math.abs(b.it.d))-(a.kind==='new'?99:Math.abs(a.it.d))).slice(0,12);
 }
