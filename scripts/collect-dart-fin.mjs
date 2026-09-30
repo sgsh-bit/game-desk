@@ -37,7 +37,7 @@ const RE = { rev: /^(매출액|영업수익|수익\(매출액\)|매출)$/, op: /
 async function fin(corpCode, year, reprt) {
   const u = `https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json?crtfc_key=${KEY}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=${reprt}&fs_div=CFS`;
   const j = await (await fetch(u)).json();
-  if (j.status !== '000') return null;
+  if (j.status !== '000') { if (process.env.DEBUG) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.appendFileSync(path.join(ROOT, 'data', 'debug', 'dartfin.txt'), `${corpCode} ${year} ${reprt}: status ${j.status} ${j.message}\n`); } return null; }
   let rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div));
   if (!rows.some(r => RE.rev.test(String(r.account_nm).replace(/\s/g, '')))) rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div) || /매출|영업이익|순이익/.test(x.account_nm));
   if (process.env.DEBUG && !rows.some(r => RE.op.test(String(r.account_nm).replace(/\s/g, '')))) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.appendFileSync(path.join(ROOT, 'data', 'debug', 'dartfin.txt'), `${corpCode} ${year} ${reprt}: ` + (j.list || []).slice(0, 80).map(x => `${x.sj_div}|${x.account_nm}|${x.account_id || ''}`).join(' ; ') + '\n'); }

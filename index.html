@@ -203,6 +203,8 @@ tr.sel td{background:var(--accent-soft)}
 .bcard.wide{grid-column:1/-1}
 
 .fin-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px}
+#fin-table td:first-child,#co-fin td:first-child{position:sticky;left:0;background:var(--panel);z-index:1}
+#fin-table tr.rate td:first-child,#co-fin tr.rate td:first-child{background:var(--panel)}
 @media (max-width:900px){.fin-grid{grid-template-columns:1fr}}
 #fin-table th{text-align:right}#fin-table th:first-child{text-align:left}
 #earn-table td.name,#earn-table .pub,#flow-table td.name,#val-table td.name{white-space:nowrap}
@@ -861,7 +863,7 @@ function renderBrief(){
   if(up.length)briefLines.push('■ 향후 7일 일정',...up.map(e=>`・${e.date.slice(5).replace('-','/')} ${e.title}${e.conf==='예상'?'(예상)':''}`));
   // 4 실적 임박
   if(earn){const soon=earnRows().filter(r=>r.ev&&r.ev.date>=t&&r.ev.date<=addDays(t,14)&&r.eOp!=null).sort((a,b)=>a.ev.date.localeCompare(b.ev.date)).slice(0,8);
-    if(soon.length){cards.push(`<div class="bcard"><h3>실적 발표 임박 (2주) <a href="#earn" data-go="earn">컨센서스</a></h3><ul>${soon.map(r=>`<li><span class="k">${r.ev.date.slice(5).replace('-','/')}</span><span>${esc(r.name)} ${r.eLab}E</span><span class="v">OP ${eok(r.eOp)} ${typeof r.eOpY==='string'?r.eOpY:fmt.pct(r.eOpY,0)}</span></li>`).join('')}</ul></div>`);
+    if(soon.length){cards.push(`<div class="bcard"><h3>실적 발표 임박 (2주) <a href="#earn" data-go="earn">컨센서스</a></h3><ul>${soon.map(r=>`<li><span class="k">${r.ev.date.slice(5).replace('-','/')}</span><span>${esc(r.name)} ${r.eLab}E</span><span class="v">OP ${eok(r.eOp)} ${typeof r.eOpY==='string'?r.eOpY:fmt.pct(r.eOpY,0)}${(()=>{const m=myEst(r.code,r.eLab);return m?.op!=null?` <span style="color:var(--accent)">당사 ${eok(m.op)}</span>`:'';})()}</span></li>`).join('')}</ul></div>`);
       briefLines.push('■ 실적 발표 임박',...soon.map(r=>`・${r.ev.date.slice(5).replace('-','/')} ${r.name} → ${r.eLab}E OP ${eok(r.eOp)} (${typeof r.eOpY==='string'?r.eOpY:fmt.pct(r.eOpY,0)+' YoY'})`));}}
   // 5 공시
   if(dart){const imp=dart.items.filter(x=>x.date>=addDays(t,-3)&&!['정기','기타','IR','주총'].includes(x.tag)).slice(0,8);
@@ -904,7 +906,7 @@ function finTable(c){
     ${Q.eps?.some(v=>v!=null)?row('EPS',Q.eps,won,true):''}${finMode==='annual'&&Q.roe?.some(v=>v!=null)?row('ROE',Q.roe,pct,true):''}${finMode==='annual'&&Q.per?.some(v=>v!=null)?row('PER',Q.per,x,true):''}${finMode==='annual'&&Q.pbr?.some(v=>v!=null)?row('PBR',Q.pbr,x,true):''}${finMode==='annual'&&Q.dps?.some(v=>v!=null)?row('주당배당금',Q.dps,won,true):''}
   </tbody>`;
 }
-function finChart(c,{w=520,h=230}={}){
+function finChart(c,{w=560,h=240}={}){
   const Q=c[finMode]; const P=Q.periods; if(!P?.length)return '';
   const lab=p=>finMode==='quarter'?`${p.label.slice(2,4)}.${{'03':'1Q','06':'2Q','09':'3Q','12':'4Q'}[p.label.slice(5,7)]||''}`:p.label.slice(0,4);
   const L=46,R=44,T=16,B=26,n=P.length,bw=Math.min(34,(w-L-R)/n*0.32);
@@ -922,7 +924,7 @@ function finChart(c,{w=520,h=230}={}){
   const pts=P.map((p,i)=>opm[i]!=null?`${X(i).toFixed(1)},${MY(opm[i]).toFixed(1)}`:null).filter(Boolean).join(' ');
   const line=`<polyline points="${pts}" fill="none" stroke="var(--new)" stroke-width="2" stroke-linejoin="round"/>${P.map((p,i)=>opm[i]!=null?`<circle cx="${X(i)}" cy="${MY(opm[i])}" r="3.5" fill="var(--new)" stroke="var(--panel)" stroke-width="1.5"><title>${lab(p)} OPM ${opm[i].toFixed(1)}%</title></circle>`:'').join('')}`;
   const mticks=[0,Math.round(mmax/2/5)*5,Math.round(mmax/5)*5].filter((v,i,a)=>a.indexOf(v)===i&&v<=mmax);
-  return `<div class="legend"><span><i style="background:var(--accent);opacity:.55"></i>매출액</span><span><i style="background:var(--accent)"></i>영업이익</span><span><i style="background:var(--new)"></i>영업이익률(우)</span><span class="pub">옅은 색 = 컨센서스</span></div><div class="chart"><svg viewBox="0 0 ${w} ${h}">${gEl}<line x1="${L}" x2="${w-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)"/>${mticks.map(v=>`<text x="${w-R+6}" y="${MY(v)+4}">${v}%</text>`).join('')}${bars}${line}${P.map((p,i)=>`<text x="${X(i)}" y="${h-8}" text-anchor="middle">${lab(p)}${p.est?'E':''}</text>`).join('')}</svg></div>`;
+  return `<div class="legend"><span><i style="background:var(--accent);opacity:.55"></i>매출액</span><span><i style="background:var(--accent)"></i>영업이익</span><span><i style="background:var(--new)"></i>영업이익률(우)</span><span class="pub">옅은 색 = 컨센서스</span></div><div class="chart"><svg viewBox="0 0 ${w} ${h}">${gEl}<line x1="${L}" x2="${w-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)"/>${mticks.map(v=>`<text x="${w-R+6}" y="${MY(v)+4}">${v}%</text>`).join('')}${bars}${line}${P.map((p,i)=>(n>8&&i%2!==(n-1)%2)?'':`<text x="${X(i)}" y="${h-8}" text-anchor="middle">${lab(p)}${p.est?'E':''}</text>`).join('')}</svg></div>`;
 }
 function renderFin(){
   if(!earn)return; const order=market?market.kr.map(r=>r.code):Object.keys(earn.companies); const codes=order.filter(c=>earn.companies[c]); if(!finCode||!earn.companies[finCode])finCode=codes[0];
@@ -1003,6 +1005,7 @@ function renderCo(){
     <div class="kpi"><div class="l">기관 순매수 5일 / 20일</div><div class="v ${cls(sums.inst5)}">${fmt.signed(sums.inst5)}억</div><div class="d ${cls(sums.inst20)}">20일 ${fmt.signed(sums.inst20)}억</div></div>
     ${qf?.a?`<div class="kpi"><div class="l">최근 분기 ${qf.a.lab} 영업이익</div><div class="v">${eok(qf.a.op)}</div><div class="d">YoY ${gCell(qf.a.opY)} · OPM ${qf.a.opm!=null?qf.a.opm.toFixed(1)+'%':'–'}</div></div>`:''}
     ${qf?.e?`<div class="kpi"><div class="l">다음 분기 ${qf.e.lab}E 영업이익 컨센</div><div class="v">${eok(qf.e.op)}</div><div class="d">YoY ${gCell(qf.e.opY)} · OPM ${qf.e.opm!=null?qf.e.opm.toFixed(1)+'%':'–'}</div></div>`:''}
+    ${(()=>{const m=qf?.e?myEst(r.code,qf.e.lab):null;return m?.op!=null?`<div class="kpi" style="border-color:var(--accent)"><div class="l">당사 추정 ${qf.e.lab}E 영업이익</div><div class="v" style="color:var(--accent)">${eok(m.op)}</div><div class="d ${cls(qf.e.op?(m.op/qf.e.op-1)*100:null)}">컨센 대비 ${qf.e.op?fmt.pct((m.op/qf.e.op-1)*100,1):'–'}</div></div>`:'';})()}
     <div class="kpi"><div class="l">목표주가 · 상승여력</div><div class="v">${r.target?fmt.n(r.target):'–'}</div><div class="d ${cls(r.upside)}">${fmt.pct(r.upside,0)} · ${recLabel(r.recMean,r.nAnalysts)}</div></div>
   </div>
   <div class="co-grid">
