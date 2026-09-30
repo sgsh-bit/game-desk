@@ -59,10 +59,11 @@ for (const c of KR) {
     if (!Q.periods.length) throw new Error('no periods');
     // merge with archived actual quarters (data/history/quarters.json) so the window grows over time
     const arch = (quarterArchive[c.code] = quarterArchive[c.code] || {});
-    Q.periods.forEach((p, i) => { if (!p.est) { arch[p.key] = {}; for (const k of KEYS) if (Q[k]?.[i] != null) arch[p.key][k] = Q[k][i]; } });
+    Q.periods.forEach((p, i) => { if (!p.est && arch[p.key]?.src !== 'fn') { arch[p.key] = {}; for (const k of KEYS) if (Q[k]?.[i] != null) arch[p.key][k] = Q[k][i]; } });
     const keys = [...new Set([...Object.keys(arch), ...Q.periods.map(p => p.key)])].sort().slice(-12);
     const merged = { periods: keys.map(k => Q.periods.find(p => p.key === k) || { key: k, label: `${k.slice(0, 4)}.${k.slice(4)}`, est: false }) };
-    for (const m of KEYS) merged[m] = keys.map(k => { const i = Q.periods.findIndex(p => p.key === k); return i >= 0 ? Q[m]?.[i] ?? null : arch[k]?.[m] ?? null; });
+    for (const m of KEYS) merged[m] = keys.map(k => { const i = Q.periods.findIndex(p => p.key === k); const fnv = arch[k]?.src === 'fn' ? arch[k]?.[m] : undefined; return fnv != null ? fnv : (i >= 0 ? Q[m]?.[i] ?? null : arch[k]?.[m] ?? null); });
+    merged.src = keys.map(k => arch[k]?.src || (Q.periods.some(p => p.key === k) ? 'naver' : null));
     out.companies[c.code] = { name: c.name, sector: c.sector, quarter: merged, annual: A };
   } catch (e) {
     out.failures.push(`${c.code}: ${e.message.slice(0, 120)}`);

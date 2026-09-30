@@ -1,0 +1,38 @@
+name: ingest-fnguide
+
+on:
+  push:
+    branches: [main]
+    paths: ["data/fnguide/**", "scripts/ingest-fnguide.mjs"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: node scripts/ingest-fnguide.mjs
+      - name: Rebuild earnings with archive
+        run: node scripts/collect-earnings.mjs || true
+      - name: Commit data
+        run: |
+          git config user.name "game-desk-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "no changes"; else
+            git commit -m "data: fnguide ingest $(date -u +'%Y-%m-%dT%H:%MZ')"
+            git pull --rebase -X theirs origin main || true
+            git push
+          fi
