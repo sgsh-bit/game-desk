@@ -26,3 +26,5 @@
 - 캘린더 구독: `data/events.ics` (Outlook/Google "URL로 구독")
 - 히스토리: `data/history/valuation.json`(목표가·추정PER 일별), `data/history/consensus.json`(분기 OP 컨센 일별) → 1M 변화 컬럼
 - 워치리스트 "내 게임 추가": 보는 사람 브라우저(localStorage)에만 저장
+- 종목 카드 탭: 주가·수급·밸류·실적·뉴스·공시·리포트·관련 게임 순위를 종목별 한 화면 (수급/밸류/실적 표의 종목명 클릭)
+- 실적 탭: 요약(발표 임박순) + 종목별 분기/연간 재무 상세(매출·OP·OPM·순이익·EPS·ROE·DPS) + 차트; `data/history/quarters.json`에 확정 분기 누적(분기 YoY용)
