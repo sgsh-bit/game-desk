@@ -3,7 +3,7 @@ name: deploy-pages
 on:
   push:
     branches: [main]
-    paths: ["index.html", "data/**", ".nojekyll"]
+    paths: ["index.html", "data/**", ".nojekyll", "*.html"]
   workflow_dispatch:
 
 permissions:

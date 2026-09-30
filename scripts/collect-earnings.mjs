@@ -50,5 +50,18 @@ for (const c of KR) {
   }
   await sleep(400);
 }
+// 컨센서스 일별 스냅샷 (다음 분기 OP E, 연간 OP E) → data/history/consensus.json (90일)
+const HP = path.join(ROOT, 'data', 'history', 'consensus.json');
+const hist = fs.existsSync(HP) ? JSON.parse(fs.readFileSync(HP, 'utf8')) : {};
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+for (const [code, c] of Object.entries(out.companies)) {
+  const Q = c.quarter, A = c.annual;
+  const nextE = Q.periods.findIndex(p => p.est);
+  const yr = String(new Date().getFullYear());
+  const ai = A.periods.findIndex(p => p.label.startsWith(yr));
+  (hist[code] = hist[code] || {})[today] = { qLab: nextE >= 0 ? Q.periods[nextE].label : null, qRev: nextE >= 0 ? Q.rev[nextE] : null, qOp: nextE >= 0 ? Q.op[nextE] : null, yOp: ai >= 0 ? A.op[ai] : null, yRev: ai >= 0 ? A.rev[ai] : null };
+  for (const d of Object.keys(hist[code]).sort().slice(0, -90)) delete hist[code][d];
+}
+fs.writeFileSync(HP, JSON.stringify(hist) + '\n');
 fs.writeFileSync(OUT, JSON.stringify(out) + '\n');
 console.log(`earnings: ${Object.keys(out.companies).length} companies, failures ${out.failures.length}`, out.failures.slice(0, 3));

@@ -189,6 +189,17 @@ tr.sel td{background:var(--accent-soft)}
 .hist{margin-top:12px;padding:12px}
 .hist h3{margin:0 0 4px;font-size:14px}
 .tagc{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:3px;color:#fff;background:var(--c);white-space:nowrap}
+
+.brief-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.bcard{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.bcard h3{margin:0 0 8px;font-size:13.5px;display:flex;justify-content:space-between;align-items:baseline}
+.bcard h3 a{font-size:11.5px;font-weight:400;color:var(--accent);text-decoration:none}
+.bcard ul{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:12.5px}
+.bcard li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:baseline}
+.bcard li .k{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.bcard li .v{font-family:var(--mono);font-weight:600;white-space:nowrap;text-align:right}
+.bcard .empty{padding:10px 0;text-align:left}
+.bcard.wide{grid-column:1/-1}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:grid;gap:6px;max-width:80ch}
 </style>
 </head>
@@ -196,7 +207,8 @@ tr.sel td{background:var(--accent-soft)}
 <header class="top"><div class="in">
   <div class="brand"><h1>게임 섹터 데스크</h1><span class="clock" id="clock"></span></div>
   <nav class="tabs" role="tablist" aria-label="섹션">
-    <button role="tab" data-tab="watch" aria-selected="true">워치리스트</button>
+    <button role="tab" data-tab="brief" aria-selected="true">브리핑</button>
+    <button role="tab" data-tab="watch" aria-selected="false">워치리스트</button>
     <button role="tab" data-tab="rank" aria-selected="false">매출순위</button>
     <button role="tab" data-tab="cal" aria-selected="false">이벤트 캘린더</button>
     <button role="tab" data-tab="flow" aria-selected="false">수급</button>
@@ -214,7 +226,14 @@ tr.sel td{background:var(--accent-soft)}
 <div class="wrap">
 <div class="notice" id="notice" hidden></div>
 
-<section class="view" id="view-watch">
+
+<section class="view" id="view-brief">
+  <div class="sec-head"><h2 id="brief-title">오늘의 브리핑</h2><span class="sub">수급 · 순위 변동 · 일정 · 공시 · 리포트를 한 화면에</span><span class="spacer"></span>
+    <button class="btn primary" id="brief-copy">텔레그램용 복사</button></div>
+  <div class="brief-grid" id="brief"></div>
+</section>
+
+<section class="view" id="view-watch" hidden>
   <div class="sec-head"><h2>관심 게임 순위</h2><span class="sub">스토어별 최고매출 순위 · 변동은 전일 스냅샷 대비 (▲상승=빨강, ▼하락=파랑, N=신규 진입)</span></div>
   <div class="wl-tools">
     <button class="btn" id="wl-copy">텔레그램용 복사</button>
@@ -246,6 +265,8 @@ tr.sel td{background:var(--accent-soft)}
   <div class="chips" id="cal-chips" style="margin-bottom:12px"></div>
   <div class="panel"><div id="cal-list"><div class="empty">일정을 불러오는 중…</div></div></div>
   <p class="help">"예상"으로 표시된 실적발표일은 전년 발표 패턴 기반 추정치이며 확정 공시 시 갱신됩니다.</p>
+  <div class="panel" style="padding:12px;margin-top:12px"><b style="font-size:13px">캘린더 구독</b><div class="help" style="margin-top:4px">아래 주소를 Outlook·Google 캘린더의 "URL로 구독"에 넣으면 일정이 자동으로 동기화됩니다 (6시간 주기).</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><code id="ics-url" style="font-family:var(--mono);font-size:12px;background:var(--bg);padding:6px 8px;border-radius:4px;word-break:break-all"></code><button class="btn small" id="ics-copy">주소 복사</button></div></div>
 </section>
 
 
@@ -360,7 +381,7 @@ const charts={}; let watch=[], events=[]; let rankFilter='apple', calFilter='all
 
 function showTab(t){$$('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$$('section.view').forEach(s=>s.hidden=(s.id!=='view-'+t));try{localStorage.setItem('tab',t)}catch(e){}}
 $$('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
-(function(){let t='watch';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(watch|rank|cal|flow|val|earn|dart|ind|ccu|news|rep)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
+(function(){let t='brief';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(brief|watch|rank|cal|flow|val|earn|dart|ind|ccu|news|rep)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
 
 function deltaHTML(d,hasPrev){
   if(!hasPrev)return '';
@@ -567,7 +588,7 @@ function renderCcu(d){
 (async()=>{
   try{market=await getJSON('data/market.json');renderFlow();renderVal();if(newsData)renderNews();}catch(e){$('#flow-body').innerHTML='<tr><td colspan="12" class="empty">수급 데이터가 아직 없습니다 (매 거래일 16:40 KST 수집).</td></tr>';$('#val-body').innerHTML='<tr><td colspan="15" class="empty">밸류에이션 데이터가 아직 없습니다.</td></tr>';}
   try{renderInd(await getJSON('data/kosis.json'));}catch(e){renderInd(null);}
-  try{renderCcu(await getJSON('data/steam_ccu.json'));}catch(e){renderCcu(null);}
+  try{ccuData=await getJSON('data/steam_ccu.json');renderCcu(ccuData);}catch(e){renderCcu(null);}
 })();
 
 
@@ -711,7 +732,62 @@ function renderDart(){
   try{dart=await getJSON('data/dart.json');}catch(e){}
   const wait=()=>new Promise(r=>{const t=setInterval(()=>{if(events.length){clearInterval(t);r();}},100);setTimeout(()=>{clearInterval(t);r();},4000);});
   await wait(); renderEarn(); renderDart();
+  setTimeout(renderBrief,300); setTimeout(renderBrief,2500); setTimeout(renderBrief,6000);
 })();
+
+
+/* ---------- 브리핑 ---------- */
+let briefLines=[];
+function movers(){
+  const out=[];
+  for(const st of STORES){const doc=charts[st.id];if(!doc||!doc.prevDate)continue;
+    for(const it of doc.items){const inWl=watch.some(w=>matchItem(it,w.keys));if(!(isKR(it)||inWl))continue;
+      if(it.d==null&&it.r<=30)out.push({store:st.label,it,kind:'new'});else if(it.d!=null&&Math.abs(it.d)>=5)out.push({store:st.label,it,kind:it.d>0?'up':'down'});}}
+  return out.sort((a,b)=>(b.kind==='new'?99:Math.abs(b.it.d))-(a.kind==='new'?99:Math.abs(a.it.d))).slice(0,12);
+}
+function renderBrief(){
+  const t=todayKST(); $('#brief-title').textContent=`${t.replace(/-/g,'.')} (${dowOf(t)}) 브리핑`;
+  const cards=[]; briefLines=[`[인터넷/게임 데스크 브리핑] ${t.replace(/-/g,'.')}`];
+  // 1 수급
+  if(market){const rows=market.kr.map(r=>({r,f1:flowKRW(r,'frgn',1),f5:flowKRW(r,'frgn',5),i1:flowKRW(r,'inst',1)})).filter(x=>x.f5!=null);
+    const top=[...rows].sort((a,b)=>b.f5-a.f5).slice(0,3), bot=[...rows].sort((a,b)=>a.f5-b.f5).slice(0,3);
+    const asOf=market.kr.find(r=>r.asOf)?.asOf||''; const tf=rows.reduce((s,x)=>s+(x.f1||0),0), ti=rows.reduce((s,x)=>s+(x.i1||0),0);
+    cards.push(`<div class="bcard"><h3>수급 (${asOf.slice(5).replace('-','/')} 기준) <a href="#flow" data-go="flow">자세히</a></h3><ul>
+      <li><span class="k">전일 합계</span><span>외인 <b class="${cls(tf)}">${fmt.signed(tf)}억</b> · 기관 <b class="${cls(ti)}">${fmt.signed(ti)}억</b></span><span></span></li>
+      ${top.map(x=>`<li><span class="k">외인 5일 매수</span><span>${esc(x.r.name)}</span><span class="v pos">${fmt.signed(x.f5)}억</span></li>`).join('')}
+      ${bot.map(x=>`<li><span class="k">외인 5일 매도</span><span>${esc(x.r.name)}</span><span class="v neg">${fmt.signed(x.f5)}억</span></li>`).join('')}</ul></div>`);
+    briefLines.push(`■ 수급(${asOf.slice(5).replace('-','/')}) 외인 ${fmt.signed(tf)}억 | 기관 ${fmt.signed(ti)}억`,`・외인 5일 매수 → ${top.map(x=>`${x.r.name} ${fmt.signed(x.f5)}`).join(' | ')}`,`・외인 5일 매도 → ${bot.map(x=>`${x.r.name} ${fmt.signed(x.f5)}`).join(' | ')}`);}
+  // 2 순위 변동
+  const mv=movers();
+  cards.push(`<div class="bcard"><h3>매출순위 변동 (국내사·워치리스트) <a href="#rank" data-go="rank">자세히</a></h3>${mv.length?`<ul>${mv.map(m=>`<li><span class="k">${esc(m.store.replace('App Store','Apple').replace('Google Play','Google'))}</span><span>${esc(m.it.n)}</span><span class="v">${m.it.r}위 ${m.kind==='new'?'<span class="delta new">NEW</span>':deltaHTML(m.it.d,true)}</span></li>`).join('')}</ul>`:'<div class="empty">전일 대비 5계단 이상 변동 없음</div>'}</div>`);
+  if(mv.length)briefLines.push('■ 매출순위 변동',...mv.map(m=>`・${m.store.replace('App Store','Apple').replace('Google Play','Google')} ${m.it.n} ${m.it.r}위 ${m.kind==='new'?'(신규)':m.it.d>0?`(▲${m.it.d})`:`(▼${-m.it.d})`}`));
+  // 3 일정
+  const up=events.filter(e=>(e.end||e.date)>=t&&e.date<=addDays(t,7)).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10);
+  cards.push(`<div class="bcard"><h3>향후 7일 일정 <a href="#cal" data-go="cal">캘린더</a></h3>${up.length?`<ul>${up.map(e=>`<li><span class="k">${e.date.slice(5).replace('-','/')} ${dowOf(e.date)}</span><span><span class="cat" style="--c:${CATS[e.cat]?.c||'#888'}">${CATS[e.cat]?.l||''}</span> ${esc(e.title)}${e.conf==='예상'?' <span class="conf est">예상</span>':''}</span><span></span></li>`).join('')}</ul>`:'<div class="empty">일정 없음</div>'}</div>`);
+  if(up.length)briefLines.push('■ 향후 7일 일정',...up.map(e=>`・${e.date.slice(5).replace('-','/')} ${e.title}${e.conf==='예상'?'(예상)':''}`));
+  // 4 실적 임박
+  if(earn){const soon=earnRows().filter(r=>r.ev&&r.ev.date>=t&&r.ev.date<=addDays(t,14)&&r.eOp!=null).sort((a,b)=>a.ev.date.localeCompare(b.ev.date)).slice(0,8);
+    if(soon.length){cards.push(`<div class="bcard"><h3>실적 발표 임박 (2주) <a href="#earn" data-go="earn">컨센서스</a></h3><ul>${soon.map(r=>`<li><span class="k">${r.ev.date.slice(5).replace('-','/')}</span><span>${esc(r.name)} ${r.eLab}E</span><span class="v">OP ${eok(r.eOp)} ${typeof r.eOpY==='string'?r.eOpY:fmt.pct(r.eOpY,0)}</span></li>`).join('')}</ul></div>`);
+      briefLines.push('■ 실적 발표 임박',...soon.map(r=>`・${r.ev.date.slice(5).replace('-','/')} ${r.name} → ${r.eLab}E OP ${eok(r.eOp)} (${typeof r.eOpY==='string'?r.eOpY:fmt.pct(r.eOpY,0)+' YoY'})`));}}
+  // 5 공시
+  if(dart){const imp=dart.items.filter(x=>x.date>=addDays(t,-3)&&!['정기','기타','IR'].includes(x.tag)).slice(0,8);
+    cards.push(`<div class="bcard"><h3>주요 공시 (3일) <a href="#dart" data-go="dart">전체</a></h3>${imp.length?`<ul>${imp.map(x=>`<li><span class="k">${x.date.slice(5).replace('-','/')}</span><span><span class="tagc" style="--c:${TAGC[x.tag]||'#999'}">${x.tag}</span> ${esc(x.name)} · <a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${esc(x.rcp)}" target="_blank" rel="noopener">${esc(x.title)}</a></span><span></span></li>`).join('')}</ul>`:'<div class="empty">주요 공시 없음</div>'}</div>`);
+    if(imp.length)briefLines.push('■ 주요 공시',...imp.map(x=>`・${x.date.slice(5).replace('-','/')} ${x.name} [${x.tag}] ${x.title}`));}
+  // 6 리포트
+  if(repData){const rp=repData.items.filter(r=>r.date>=addDays(t,-7)).slice(0,6);
+    cards.push(`<div class="bcard"><h3>${esc(repData.broker||'')} 리포트 (7일) <a href="#rep" data-go="rep">전체</a></h3>${rp.length?`<ul>${rp.map(r=>`<li><span class="k">${r.date.slice(5).replace('-','/')}</span><span>${r.subject?esc(r.subject)+' · ':''}${r.view||r.url?`<a href="${esc(r.view||r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>`:esc(r.title)}</span><span></span></li>`).join('')}</ul>`:'<div class="empty">최근 7일 발간 없음</div>'}</div>`);
+    if(rp.length)briefLines.push(`■ ${repData.broker||''} 리포트`,...rp.map(r=>`・${r.date.slice(5).replace('-','/')} ${r.subject?r.subject+' ':''}${r.title}`));}
+  // 7 스팀
+  if(ccuData){const now=Math.floor(Date.now()/60000);const rows=ccuData.apps.map(a=>{const s=ccuData.series[a.appid]||[];const cur=s[s.length-1]?.[1]??null;const w=(f,to)=>s.filter(([t])=>t>now-f&&t<=now-to).map(x=>x[1]);const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;const a7=avg(w(7*1440,0)),a14=avg(w(14*1440,7*1440));return {a,cur,wow:a7&&a14?(a7/a14-1)*100:null};}).filter(r=>r.cur!=null).sort((a,b)=>b.cur-a.cur).slice(0,6);
+    cards.push(`<div class="bcard"><h3>스팀 동접 <a href="#ccu" data-go="ccu">자세히</a></h3><ul>${rows.map(r=>`<li><span class="k">${esc(r.a.co)}</span><span>${esc(r.a.name)}</span><span class="v">${fmt.n(r.cur)}${r.wow!=null?` <span class="${cls(r.wow)}" style="font-weight:400">${fmt.pct(r.wow,0)}</span>`:''}</span></li>`).join('')}</ul></div>`);
+    briefLines.push('■ 스팀 동접',...rows.map(r=>`・${r.a.name} ${fmt.n(r.cur)}${r.wow!=null?` (전주비 ${fmt.pct(r.wow,0)})`:''}`));}
+  $('#brief').innerHTML=cards.join('');
+  $$('#brief [data-go]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showTab(a.dataset.go);window.scrollTo(0,0);}));
+}
+$('#brief-copy').addEventListener('click',()=>{const txt=briefLines.join('\n');const done=()=>toast('복사됨');const fb=()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('복사 실패');}ta.remove();};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(fb);else fb();});
+let ccuData=null;
+(function(){const u=location.origin+location.pathname.replace(/index\.html$/,'')+'data/events.ics';$('#ics-url').textContent=u;$('#ics-copy').addEventListener('click',()=>{navigator.clipboard?.writeText(u).then(()=>toast('복사됨')).catch(()=>toast('복사 실패'));});})();
 
 /* ---------- data loading ---------- */
 async function getJSON(u){const r=await fetch(u+'?t='+Math.floor(Date.now()/60000),{cache:'no-store'});if(!r.ok)throw new Error(u+' '+r.status);return r.json();}

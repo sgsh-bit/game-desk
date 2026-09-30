@@ -32,6 +32,8 @@ jobs:
         run: node scripts/collect-dart.mjs
       - name: Reports
         run: node scripts/collect-reports.mjs
+      - name: Calendar feed (ICS)
+        run: node scripts/build-ics.mjs
       - name: Commit data
         run: |
           git config user.name "game-desk-bot"

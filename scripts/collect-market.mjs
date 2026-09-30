@@ -148,5 +148,17 @@ for (const g of GLOBAL) {
 }
 function pick(o, keys) { const r = {}; for (const k of keys) if (o[k] !== undefined) r[k] = o[k]; return r; }
 
+// 밸류에이션 일별 스냅샷 (주가·추정PER·PBR·목표가) → data/history/valuation.json (180일)
+{
+  const HP = path.join(ROOT, 'data', 'history', 'valuation.json');
+  const hist = fs.existsSync(HP) ? JSON.parse(fs.readFileSync(HP, 'utf8')) : {};
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  for (const r of [...result.kr, ...result.global]) {
+    const k = r.code || r.sym;
+    (hist[k] = hist[k] || {})[today] = { p: r.price ?? null, fpe: r.cnsPer ?? r.fwdPer ?? null, pbr: r.pbr ?? null, tp: r.target ?? null, mc: r.mcap ?? null };
+    for (const d of Object.keys(hist[k]).sort().slice(0, -180)) delete hist[k][d];
+  }
+  fs.writeFileSync(HP, JSON.stringify(hist) + '\n');
+}
 fs.writeFileSync(OUT, JSON.stringify(result) + '\n');
 log('done. failures:', result.failures.length ? result.failures : 'none');
