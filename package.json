@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": { "collect": "node scripts/collect.mjs" },
-  "dependencies": { "playwright": "1.47.0" }
+  "scripts": {
+    "collect": "node scripts/collect.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.47.0",
+    "yahoo-finance2": "^4.0.2"
+  }
 }

@@ -37,6 +37,8 @@ jobs:
           SKIP_GPLAY: ${{ github.event.inputs.skip_gplay }}
           SKIP_STEAM: ${{ github.event.inputs.skip_steam }}
         run: node scripts/collect.mjs
+      - name: Steam concurrent players
+        run: node scripts/collect-steam-ccu.mjs
       - name: Commit data
         run: |
           git config user.name "game-desk-bot"

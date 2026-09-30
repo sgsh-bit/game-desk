@@ -1,0 +1,37 @@
+name: collect-market
+
+on:
+  schedule:
+    - cron: "40 7 * * 1-5"    # 16:40 KST weekdays — after KRX close (Naver 수급 확정치)
+    - cron: "10 22 * * 0-4"   # 07:10 KST Mon–Fri — after US close (global peers)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market
+  cancel-in-progress: false
+
+jobs:
+  market:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Collect market data
+        run: node scripts/collect-market.mjs
+      - name: Commit data
+        run: |
+          git config user.name "game-desk-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "no changes"; else
+            git commit -m "data: market $(date -u +'%Y-%m-%dT%H:%MZ')"
+            git pull --rebase -X theirs origin main || true
+            git push
+          fi
