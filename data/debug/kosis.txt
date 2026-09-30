@@ -1,5 +1,0 @@
-search HTTP 200: {"err":"11","errMsg":"유효하지않은 인증KEY입니다."}
-DT_1KE10081: {"err":"11","errMsg":"유효하지 않은 인증KEY입니다."}
-DT_1KE10051: {"err":"11","errMsg":"유효하지 않은 인증KEY입니다."}
-DT_1KE10091: {"err":"11","errMsg":"유효하지 않은 인증KEY입니다."}
-DT_1KE10071: {"err":"11","errMsg":"유효하지 않은 인증KEY입니다."}

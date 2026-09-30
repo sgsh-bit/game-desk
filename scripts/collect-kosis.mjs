@@ -10,14 +10,16 @@ if (!KEY) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true });
 
 // candidate tables (orgId 101 = 통계청). Names are checked at runtime; the first matching one wins.
 const CANDIDATES = [
+  { tblId: 'DT_1KE10071', want: /판매매체별\/상품군별|상품군별.*판매매체별|판매매체별.*상품군별/ },
   { tblId: 'DT_1KE10081', want: /상품군별.*판매매체별|판매매체별.*상품군별/ },
   { tblId: 'DT_1KE10051', want: /상품군별|판매매체별/ },
   { tblId: 'DT_1KE10091', want: /상품군별|판매매체별/ },
   { tblId: 'DT_1KE10071', want: /상품군별|판매매체별/ },
 ];
 async function fetchTable(tblId, months = 30) {
-  const u = new URL('https://kosis.kr/openapi/Param/statisticsParameterData.do');
-  Object.entries({ method: 'getList', apiKey: KEY, itmId: 'ALL', objL1: 'ALL', objL2: 'ALL', objL3: '', objL4: '', objL5: '', objL6: '', objL7: '', objL8: '', format: 'json', jsonVD: 'Y', prdSe: 'M', newEstPrdCnt: String(months), orgId: '101', tblId }).forEach(([k, v]) => u.searchParams.set(k, v));
+  // KOSIS does not URL-decode the key: pass apiKey raw ('=' must stay literal)
+  const qs = Object.entries({ method: 'getList', itmId: 'ALL', objL1: 'ALL', objL2: 'ALL', objL3: '', objL4: '', objL5: '', objL6: '', objL7: '', objL8: '', format: 'json', jsonVD: 'Y', prdSe: 'M', newEstPrdCnt: String(months), orgId: '101', tblId }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  const u = `https://kosis.kr/openapi/Param/statisticsParameterData.do?apiKey=${KEY}&${qs}`;
   const r = await fetch(u); const txt = await r.text();
   let j; try { j = JSON.parse(txt); } catch { throw new Error(`${tblId}: non-JSON ${txt.slice(0, 120)}`); }
   if (!Array.isArray(j)) throw new Error(`${tblId}: ${JSON.stringify(j).slice(0, 160)}`);
@@ -29,8 +31,7 @@ const dbg = []; const D = (...a) => { const m = a.join(' '); console.log(m); dbg
 // 1) discover tables by keyword search
 let discovered = [];
 try {
-  const u = new URL('https://kosis.kr/openapi/statisticsSearch.do');
-  Object.entries({ method: 'getList', apiKey: KEY, searchNm: '온라인쇼핑', format: 'json', jsonVD: 'Y' }).forEach(([k, v]) => u.searchParams.set(k, v));
+  const u = `https://kosis.kr/openapi/statisticsSearch.do?apiKey=${KEY}&method=getList&searchNm=${encodeURIComponent('온라인쇼핑')}&format=json&jsonVD=Y`;
   const r = await fetch(u); const txt = await r.text();
   D(`search HTTP ${r.status}: ${txt.slice(0, 300)}`);
   const j = JSON.parse(txt);

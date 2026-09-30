@@ -1,0 +1,37 @@
+name: collect-news
+
+on:
+  schedule:
+    - cron: "5 */3 * * *"     # every 3 hours
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: news
+  cancel-in-progress: false
+
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: News
+        run: node scripts/collect-news.mjs
+      - name: Reports
+        run: node scripts/collect-reports.mjs
+      - name: Commit data
+        run: |
+          git config user.name "game-desk-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "no changes"; else
+            git commit -m "data: news/reports $(date -u +'%Y-%m-%dT%H:%MZ')"
+            git pull --rebase -X theirs origin main || true
+            git push
+          fi

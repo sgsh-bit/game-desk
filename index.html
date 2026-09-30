@@ -151,6 +151,17 @@ tr.past td{opacity:.55}
 .chart svg{width:100%;height:auto;display:block}
 .chart text{fill:var(--muted);font-family:var(--mono);font-size:11px}
 .chart .grid{stroke:var(--line2);stroke-width:1}
+
+.news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.news-card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.news-card h3{margin:0 0 6px;font-size:13.5px;display:flex;justify-content:space-between;align-items:baseline}
+.news-card h3 span{font-size:11px;color:var(--muted);font-weight:400;font-family:var(--mono)}
+.news-card ul{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.news-card li{font-size:12.5px;line-height:1.35;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:baseline}
+.news-card li a{color:var(--fg);text-decoration:none}
+.news-card li a:hover{text-decoration:underline}
+.news-card li .m{font-size:11px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+.badge{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:3px;background:var(--accent-soft);color:var(--accent)}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:grid;gap:6px;max-width:80ch}
 </style>
 </head>
@@ -165,6 +176,8 @@ tr.past td{opacity:.55}
     <button role="tab" data-tab="val" aria-selected="false">밸류에이션</button>
     <button role="tab" data-tab="ind" aria-selected="false">산업데이터</button>
     <button role="tab" data-tab="ccu" aria-selected="false">스팀 동접</button>
+    <button role="tab" data-tab="news" aria-selected="false">뉴스</button>
+    <button role="tab" data-tab="rep" aria-selected="false">리포트</button>
   </nav>
 </div></header>
 
@@ -207,6 +220,7 @@ tr.past td{opacity:.55}
 
 <section class="view" id="view-flow" hidden>
   <div class="sec-head"><h2>수급 동향</h2><span class="sub">외국인·기관 순매수 (억원 = 순매수 주수 × 당일 종가 환산) · 매 거래일 18:10 KST 갱신</span><span class="spacer"></span><span class="stamp" id="flow-stamp"></span></div>
+  <div class="wl-tools"><button class="btn" id="flow-copy">텔레그램용 복사</button></div>
   <div class="tiles" id="flow-tiles"></div>
   <div class="panel"><div class="tablewrap"><table id="flow-table">
     <thead><tr><th>종목</th><th class="num">종가</th><th class="num">등락</th><th class="num">시총</th>
@@ -237,9 +251,24 @@ tr.past td{opacity:.55}
 <section class="view" id="view-ccu" hidden>
   <div class="sec-head"><h2>스팀 동시접속자</h2><span class="sub">Steam 공식 API · 매시 수집 · 국내 게임사 PC 타이틀 중심</span><span class="spacer"></span><span class="stamp" id="ccu-stamp"></span></div>
   <div class="panel"><div class="tablewrap"><table id="ccu-table">
-    <thead><tr><th>게임</th><th>회사</th><th class="num">현재</th><th class="num">24h 피크</th><th class="num">7일 평균</th><th class="num">전주 대비</th><th class="num">30일 피크</th><th>30일 추이(시간별)</th></tr></thead>
-    <tbody id="ccu-body"><tr><td colspan="8" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
-  <p class="help">전주 대비 = 최근 7일 평균 ÷ 직전 7일 평균 − 1. 수집 시작 초기에는 기간이 짧아 일부 지표가 비어 있습니다.</p>
+    <thead><tr><th>게임</th><th>회사</th><th class="num">현재</th><th class="num">24h 피크</th><th class="num">7일 평균</th><th class="num">전주 대비</th><th class="num">30일 피크</th><th>30일 추이(시간별)</th><th class="num">리뷰 긍정률</th><th class="num">최근 30일</th></tr></thead>
+    <tbody id="ccu-body"><tr><td colspan="10" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">전주 대비 = 최근 7일 평균 ÷ 직전 7일 평균 − 1. 리뷰 긍정률은 Steam 공식 리뷰 집계(전체 / 최근 30일, 괄호는 리뷰 수). 수집 시작 초기에는 기간이 짧아 일부 지표가 비어 있습니다.</p>
+</section>
+
+<section class="view" id="view-news" hidden>
+  <div class="sec-head"><h2>뉴스</h2><span class="sub">커버리지 종목별 최신 헤드라인 · 3시간마다 갱신</span><span class="spacer"></span><span class="stamp" id="news-stamp"></span></div>
+  <div class="chips" id="news-chips" style="margin-bottom:12px"></div>
+  <div class="news-grid" id="news-grid"></div>
+</section>
+
+<section class="view" id="view-rep" hidden>
+  <div class="sec-head"><h2>리서치 리포트</h2><span class="sub" id="rep-sub">현대차증권 인터넷/게임 발간 리포트</span><span class="spacer"></span><span class="stamp" id="rep-stamp"></span></div>
+  <div class="chips" id="rep-chips" style="margin-bottom:12px"></div>
+  <div class="panel"><div class="tablewrap"><table id="rep-table">
+    <thead><tr><th>발간일</th><th>구분</th><th>종목/산업</th><th>제목</th><th>링크</th></tr></thead>
+    <tbody id="rep-body"><tr><td colspan="5" class="empty">리포트를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">네이버증권 리서치 목록에서 자동 수집한 항목과 직접 등록한 항목을 함께 표시합니다. 원문은 발간 증권사 페이지/PDF로 연결됩니다.</p>
 </section>
 
 <footer class="foot">
@@ -279,7 +308,7 @@ const charts={}; let watch=[], events=[]; let rankFilter='apple', calFilter='all
 
 function showTab(t){$$('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$$('section.view').forEach(s=>s.hidden=(s.id!=='view-'+t));try{localStorage.setItem('tab',t)}catch(e){}}
 $$('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
-(function(){let t='watch';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(watch|rank|cal|flow|val|ind|ccu)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
+(function(){let t='watch';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(watch|rank|cal|flow|val|ind|ccu|news|rep)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
 
 function deltaHTML(d,hasPrev){
   if(!hasPrev)return '';
@@ -479,14 +508,60 @@ function renderCcu(d){
     const win=(from,to)=>s.filter(([t])=>t>now-from&&t<=now-to).map(x=>x[1]);
     const p24=win(1440,0), w7=win(7*1440,0), w14=win(14*1440,7*1440), m30=win(30*1440,0);
     const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null; const mx=a=>a.length?Math.max(...a):null;
-    const a7=avg(w7),a14=avg(w14); return {a,cur,p24:mx(p24),a7,wow:a7&&a14?(a7/a14-1)*100:null,p30:mx(m30),sp:s.slice(-720).map(x=>x[1])};}).sort((x,y)=>(y.cur??-1)-(x.cur??-1));
-  body.innerHTML=rows.map(r=>`<tr><td class="name">${esc(r.a.name)}<div class="pub">appid ${r.a.appid}</div></td><td class="pub">${esc(r.a.co)}</td><td class="num"><b>${fmt.n(r.cur)}</b></td><td class="num">${fmt.n(r.p24)}</td><td class="num">${fmt.n(r.a7)}</td><td class="num ${cls(r.wow)}">${fmt.pct(r.wow)}</td><td class="num">${fmt.n(r.p30)}</td><td>${spark(r.sp,{w:160})}</td></tr>`).join('');
+    const a7=avg(w7),a14=avg(w14); return {a,cur,p24:mx(p24),a7,wow:a7&&a14?(a7/a14-1)*100:null,p30:mx(m30),sp:s.slice(-720).map(x=>x[1]),rv:(d.reviews||{})[a.appid]};}).sort((x,y)=>(y.cur??-1)-(x.cur??-1));
+  body.innerHTML=rows.map(r=>`<tr><td class="name">${esc(r.a.name)}<div class="pub">appid ${r.a.appid}</div></td><td class="pub">${esc(r.a.co)}</td><td class="num"><b>${fmt.n(r.cur)}</b></td><td class="num">${fmt.n(r.p24)}</td><td class="num">${fmt.n(r.a7)}</td><td class="num ${cls(r.wow)}">${fmt.pct(r.wow)}</td><td class="num">${fmt.n(r.p30)}</td><td>${spark(r.sp,{w:160})}</td><td class="num">${r.rv?.pct!=null?`<b>${r.rv.pct}%</b> <span class="pub">(${fmt.compact(r.rv.total)})</span>`:'–'}</td><td class="num">${r.rv?.pct30!=null?`${r.rv.pct30}% <span class="pub">(${fmt.compact(r.rv.total30)})</span>`:'–'}</td></tr>`).join('');
 }
 
 (async()=>{
-  try{market=await getJSON('data/market.json');renderFlow();renderVal();}catch(e){$('#flow-body').innerHTML='<tr><td colspan="12" class="empty">수급 데이터가 아직 없습니다 (매 거래일 16:40 KST 수집).</td></tr>';$('#val-body').innerHTML='<tr><td colspan="15" class="empty">밸류에이션 데이터가 아직 없습니다.</td></tr>';}
+  try{market=await getJSON('data/market.json');renderFlow();renderVal();if(newsData)renderNews();}catch(e){$('#flow-body').innerHTML='<tr><td colspan="12" class="empty">수급 데이터가 아직 없습니다 (매 거래일 16:40 KST 수집).</td></tr>';$('#val-body').innerHTML='<tr><td colspan="15" class="empty">밸류에이션 데이터가 아직 없습니다.</td></tr>';}
   try{renderInd(await getJSON('data/kosis.json'));}catch(e){renderInd(null);}
   try{renderCcu(await getJSON('data/steam_ccu.json'));}catch(e){renderCcu(null);}
+})();
+
+
+/* ---------- 수급 텔레그램 복사 ---------- */
+$('#flow-copy').addEventListener('click',()=>{
+  if(!market){toast('데이터 없음');return;}
+  const asOf=market.kr.find(r=>r.asOf)?.asOf||'';
+  const rows=market.kr.map(r=>({r,f1:flowKRW(r,'frgn',1),f5:flowKRW(r,'frgn',5),i1:flowKRW(r,'inst',1),i5:flowKRW(r,'inst',5)})).sort((a,b)=>(b.f5??-1e18)-(a.f5??-1e18));
+  const lines=[`[인터넷/게임 수급] ${asOf.replace(/-/g,'.')} 기준 (억원, 외인 1일|5일 / 기관 1일|5일)`];
+  rows.forEach(({r,f1,f5,i1,i5})=>lines.push(`・${r.name} ${fmt.pct(r.chgPct)} → 외 ${fmt.signed(f1)}|${fmt.signed(f5)} / 기 ${fmt.signed(i1)}|${fmt.signed(i5)}`));
+  const txt=lines.join('\n'); const done=()=>toast('복사됨');
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('복사 실패');}ta.remove();};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(fb);else fb();
+});
+
+/* ---------- 뉴스 ---------- */
+let newsData=null, newsFilter='all';
+function ago(ts){const m=(Date.now()-new Date(ts))/60000;if(m<60)return Math.floor(m)+'분';if(m<1440)return Math.floor(m/60)+'시간';return Math.floor(m/1440)+'일';}
+function renderNews(){
+  const grid=$('#news-grid'); if(!newsData){grid.innerHTML='<div class="empty">뉴스가 아직 수집되지 않았습니다.</div>';return;}
+  $('#news-stamp').textContent='수집 '+fmtStamp(newsData.generatedAt);
+  const names=market?Object.fromEntries(market.kr.map(r=>[r.code,r.name])):{};
+  const opts=[['all','전체'],['sector','섹터'],...Object.keys(newsData.companies).map(c=>[c,names[c]||c])];
+  $('#news-chips').innerHTML=opts.map(([k,l])=>`<button class="chip" data-n="${k}" aria-pressed="${newsFilter===k}">${l}</button>`).join('');
+  $$('#news-chips .chip').forEach(b=>b.addEventListener('click',()=>{newsFilter=b.dataset.n;renderNews();}));
+  const card=(title,items,sub)=>`<div class="news-card"><h3>${esc(title)}<span>${sub||''}</span></h3><ul>${items.map(i=>`<li><a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.title)}</a><span class="m">${esc(i.src)} · ${ago(i.ts)}</span></li>`).join('')||'<li class="pub">기사 없음</li>'}</ul></div>`;
+  const cards=[];
+  if(newsFilter==='all'||newsFilter==='sector')cards.push(card('섹터 이슈',newsData.sector.slice(0,newsFilter==='sector'?30:8),'게임주·플랫폼 규제·앱마켓'));
+  for(const [c,items] of Object.entries(newsData.companies)){if(newsFilter==='all'||newsFilter===c)cards.push(card(names[c]||c,items.slice(0,newsFilter===c?20:5),c));}
+  grid.innerHTML=cards.join('');
+}
+/* ---------- 리포트 ---------- */
+let repData=null, repFilter='all';
+function renderRep(){
+  const body=$('#rep-body'); if(!repData||!repData.items.length){body.innerHTML='<tr><td colspan="5" class="empty">등록된 리포트가 없습니다. 자동 수집(3시간 주기) 또는 수동 등록 후 표시됩니다.</td></tr>';return;}
+  $('#rep-stamp').textContent='수집 '+fmtStamp(repData.generatedAt); $('#rep-sub').textContent=(repData.broker||'')+' 인터넷/게임 발간 리포트';
+  const kinds={company:'기업',industry:'산업',invest:'투자전략',manual:'등록'};
+  const opts=[['all','전체'],['company','기업분석'],['industry','산업분석'],['invest','투자전략']];
+  $('#rep-chips').innerHTML=opts.map(([k,l])=>`<button class="chip" data-r="${k}" aria-pressed="${repFilter===k}">${l}</button>`).join('');
+  $$('#rep-chips .chip').forEach(b=>b.addEventListener('click',()=>{repFilter=b.dataset.r;renderRep();}));
+  const list=repData.items.filter(r=>repFilter==='all'||r.kind===repFilter);
+  body.innerHTML=list.map(r=>`<tr><td class="date">${esc(r.date)}</td><td><span class="badge">${kinds[r.kind]||esc(r.kind||'')}</span></td><td class="pub">${esc(r.subject||'')}</td><td class="name">${esc(r.title)}</td><td style="white-space:nowrap">${r.pdf?`<a href="${esc(r.pdf)}" target="_blank" rel="noopener">PDF</a>`:''}${r.view?` <a href="${esc(r.view)}" target="_blank" rel="noopener">보기</a>`:''}${r.url?` <a href="${esc(r.url)}" target="_blank" rel="noopener">원문</a>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">해당 없음</td></tr>';
+}
+(async()=>{
+  try{newsData=await getJSON('data/news.json');}catch(e){} renderNews();
+  try{repData=await getJSON('data/reports.json');}catch(e){} renderRep();
 })();
 
 /* ---------- data loading ---------- */
