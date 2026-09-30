@@ -46,6 +46,7 @@ async function fin(corpCode, year, reprt) {
   const cur = {}, cum = {};
   for (const [k, re] of Object.entries(RE)) { cur[k] = pick(re, 'thstrm_amount', k); cum[k] = pick(re, 'thstrm_add_amount', k); }
   if (cur.npc == null) { const x = rows.find(r => /지배기업|지배주주/.test(r.account_nm) && /순이익|순손익|이익/.test(r.account_nm)); if (x) { cur.npc = num(x.thstrm_amount) / 1e8; cum.npc = num(x.thstrm_add_amount) / 1e8; } }
+  if (process.env.DEBUG && corpCode === '00904672') { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.appendFileSync(path.join(ROOT, 'data', 'debug', 'dartfin.txt'), `${corpCode} ${year} ${reprt}: list=${(j.list||[]).length} rows=${rows.length} cur=${JSON.stringify(cur)} sample=${(j.list||[]).slice(0,40).map(x=>x.sj_div+'|'+x.account_nm+'|'+x.thstrm_amount).join(' ; ')}\n`); }
   return { cur, cum };
 }
 
