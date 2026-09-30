@@ -559,7 +559,7 @@ function renderRep(){
   $('#rep-chips').innerHTML=opts.map(([k,l])=>`<button class="chip" data-r="${k}" aria-pressed="${repFilter===k}">${l}</button>`).join('');
   $$('#rep-chips .chip').forEach(b=>b.addEventListener('click',()=>{repFilter=b.dataset.r;renderRep();}));
   const list=repData.items.filter(r=>repFilter==='all'||r.kind===repFilter);
-  body.innerHTML=list.map(r=>`<tr><td class="date">${esc(r.date)}</td><td><span class="badge">${kinds[r.kind]||esc(r.kind||'')}</span></td><td class="pub">${esc(r.subject||'')}</td><td class="name">${esc(r.title)}</td><td style="white-space:nowrap">${r.pdf?`<a href="${esc(r.pdf)}" target="_blank" rel="noopener">PDF</a>`:''}${r.view?` <a href="${esc(r.view)}" target="_blank" rel="noopener">보기</a>`:''}${r.url?` <a href="${esc(r.url)}" target="_blank" rel="noopener">원문</a>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">해당 없음</td></tr>';
+  body.innerHTML=list.map(r=>`<tr><td class="date">${esc(r.date)}</td><td><span class="badge">${kinds[r.kind]||esc(r.kind||'')}</span></td><td class="pub">${esc(r.subject||'')}${r.code?` <span class="stamp">${esc(r.code)}</span>`:''}</td><td class="name">${esc(r.title)}</td><td style="white-space:nowrap">${r.pdf?`<a href="${esc(r.pdf)}" target="_blank" rel="noopener">PDF</a>`:''}${r.view?` <a href="${esc(r.view)}" target="_blank" rel="noopener">보기</a>`:''}${r.url?` <a href="${esc(r.url)}" target="_blank" rel="noopener">원문</a>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">해당 없음</td></tr>';
 }
 (async()=>{
   try{newsData=await getJSON('data/news.json');}catch(e){} renderNews();
