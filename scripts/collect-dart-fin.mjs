@@ -36,7 +36,7 @@ if (KR.some(k => !corp[k.code])) {
 const RE = { rev: /^(매출액|영업수익|수익\(매출액\)|매출)$/, op: /^영업이익(\(손실\))?$/, np: /^당기순이익(\(손실\))?$|^분기순이익(\(손실\))?$|^반기순이익(\(손실\))?$/, npc: /지배기업(의)?\s*소유주(지분)?|지배주주/ };
 async function fin(corpCode, year, reprt) {
   const u = `https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json?crtfc_key=${KEY}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=${reprt}&fs_div=CFS`;
-  const j = await (await fetch(u)).json();
+  let j; try { const r = await fetch(u); const txt = await r.text(); try { j = JSON.parse(txt); } catch { j = { status: 'ERR', message: `HTTP ${r.status} non-JSON: ${txt.slice(0, 80)}` }; } } catch (e) { j = { status: 'ERR', message: e.message }; }
   if (j.status !== '000') { if (process.env.DEBUG) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.appendFileSync(path.join(ROOT, 'data', 'debug', 'dartfin.txt'), `${corpCode} ${year} ${reprt}: status ${j.status} ${j.message}\n`); } return null; }
   let rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div));
   if (!rows.some(r => RE.rev.test(String(r.account_nm).replace(/\s/g, '')))) rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div) || /매출|영업이익|순이익/.test(x.account_nm));
@@ -58,10 +58,10 @@ for (const c of KR) {
   const arch = (archive[c.code] = archive[c.code] || {});
   let got = 0;
   for (let y = thisYear - 2; y <= thisYear; y++) {
-    const q1 = await fin(cc, y, '11013'); await sleep(120);
-    const h1 = await fin(cc, y, '11012'); await sleep(120);
-    const q3 = await fin(cc, y, '11014'); await sleep(120);
-    const fy = await fin(cc, y, '11011'); await sleep(120);
+    const q1 = await fin(cc, y, '11013'); await sleep(250);
+    const h1 = await fin(cc, y, '11012'); await sleep(250);
+    const q3 = await fin(cc, y, '11014'); await sleep(250);
+    const fy = await fin(cc, y, '11011'); await sleep(250);
     const put = (key, rec) => { if (rec.rev == null && rec.op == null) return; const o = arch[key] || {}; for (const k of ['rev', 'op', 'np', 'npc']) if (rec[k] != null) o[k] = Math.round(rec[k] * 10) / 10; if (o.rev && o.op != null) o.opm = Math.round(o.op / o.rev * 10000) / 100; o.src = 'dart'; arch[key] = o; got++; };
     if (q1) put(`${y}03`, q1.cur);
     if (h1) put(`${y}06`, h1.cur);
@@ -69,6 +69,7 @@ for (const c of KR) {
     if (fy && q3) { const d = {}; for (const k of ['rev', 'op', 'np', 'npc']) d[k] = fy.cur[k] != null && q3.cum[k] != null ? fy.cur[k] - q3.cum[k] : null; put(`${y}12`, d); }
   }
   summary.companies[c.code] = { name: c.name, quarters: Object.keys(arch).filter(k => arch[k].src === 'dart').sort() };
+  fs.writeFileSync(QA, JSON.stringify(archive) + '\n'); fs.writeFileSync(OUT, JSON.stringify(summary) + '\n');
   console.log(`${c.name}: ${got} quarter records (${summary.companies[c.code].quarters.join(',')})`);
 }
 fs.writeFileSync(QA, JSON.stringify(archive) + '\n');
