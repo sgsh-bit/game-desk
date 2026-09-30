@@ -28,6 +28,7 @@ jobs:
       - name: DART quarterly financials (backfill)
         env:
           OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
+          DEBUG: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: node scripts/collect-dart-fin.mjs || true
       - name: Earnings consensus
         env:

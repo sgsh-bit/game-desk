@@ -38,10 +38,13 @@ async function fin(corpCode, year, reprt) {
   const u = `https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json?crtfc_key=${KEY}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=${reprt}&fs_div=CFS`;
   const j = await (await fetch(u)).json();
   if (j.status !== '000') return null;
-  const rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div));
-  const pick = (re, field) => { const x = rows.find(r => re.test(String(r.account_nm).replace(/\s/g, '')) && r[field] != null && r[field] !== ''); return x ? num(x[field]) / 1e8 : null; };
+  let rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div));
+  if (!rows.some(r => RE.rev.test(String(r.account_nm).replace(/\s/g, '')))) rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div) || /매출|영업이익|순이익/.test(x.account_nm));
+  if (process.env.DEBUG && !rows.some(r => RE.op.test(String(r.account_nm).replace(/\s/g, '')))) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.appendFileSync(path.join(ROOT, 'data', 'debug', 'dartfin.txt'), `${corpCode} ${year} ${reprt}: ` + (j.list || []).slice(0, 80).map(x => `${x.sj_div}|${x.account_nm}|${x.account_id || ''}`).join(' ; ') + '\n'); }
+  const IDS = { rev: /ifrs-full_Revenue$|ifrs_Revenue$/, op: /OperatingIncomeLoss$/, np: /ifrs-full_ProfitLoss$|ifrs_ProfitLoss$/, npc: /ProfitLossAttributableToOwnersOfParent$/ };
+  const pick = (re, field, k) => { let x = rows.find(r => re.test(String(r.account_nm).replace(/\s/g, '')) && r[field] != null && r[field] !== ''); if (!x && k) x = (j.list || []).find(r => IDS[k].test(String(r.account_id || '')) && /^(IS|CIS)$/.test(r.sj_div) && r[field] != null && r[field] !== ''); return x ? num(x[field]) / 1e8 : null; };
   const cur = {}, cum = {};
-  for (const [k, re] of Object.entries(RE)) { cur[k] = pick(re, 'thstrm_amount'); cum[k] = pick(re, 'thstrm_add_amount'); }
+  for (const [k, re] of Object.entries(RE)) { cur[k] = pick(re, 'thstrm_amount', k); cum[k] = pick(re, 'thstrm_add_amount', k); }
   if (cur.npc == null) { const x = rows.find(r => /지배기업|지배주주/.test(r.account_nm) && /순이익|순손익|이익/.test(r.account_nm)); if (x) { cur.npc = num(x.thstrm_amount) / 1e8; cum.npc = num(x.thstrm_add_amount) / 1e8; } }
   return { cur, cum };
 }
