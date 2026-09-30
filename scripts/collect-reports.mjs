@@ -37,10 +37,31 @@ async function page(kind, p) {
   return rows;
 }
 
+// Naver mobile research API (JSON) — preferred; HTML list is a fallback
+const MHDR = { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1', accept: 'application/json', 'accept-language': 'ko-KR,ko;q=0.9', referer: 'https://m.stock.naver.com/' };
+async function apiPage(kind, p) {
+  const cat = { company: 'company', industry: 'industry', invest: 'invest' }[kind];
+  const urls = [`https://m.stock.naver.com/api/research/list?category=${cat}&page=${p}&pageSize=30`, `https://m.stock.naver.com/api/research/${cat}?page=${p}&pageSize=30`];
+  for (const u of urls) {
+    const r = await fetch(u, { headers: MHDR }); const txt = await r.text();
+    if (p === 1) { fs.mkdirSync(DBG, { recursive: true }); fs.writeFileSync(path.join(DBG, `api_${kind}_${urls.indexOf(u)}.txt`), `${r.status} ${u}\n${txt.slice(0, 5000)}`); }
+    if (!r.ok) continue;
+    let j; try { j = JSON.parse(txt); } catch { continue; }
+    let arr = null; (function walk(o, d) { if (arr || d > 4 || !o) return; if (Array.isArray(o)) { if (o.length && typeof o[0] === 'object' && Object.keys(o[0]).some(k => /title|subject/i.test(k)) && Object.keys(o[0]).some(k => /broker|company|firm|writer|source/i.test(k))) { arr = o; return; } o.slice(0, 2).forEach(x => walk(x, d + 1)); } else if (typeof o === 'object') Object.values(o).forEach(x => walk(x, d + 1)); })(j, 0);
+    if (!arr) continue;
+    const k0 = Object.keys(arr[0]); const key = re => k0.find(k => re.test(k));
+    const kt = key(/^title|subject$/i) || key(/title/i), kb = key(/broker|firm|writer|source/i), kd = key(/date|time|day/i), ks = key(/itemName|stockName|industryName|categoryName|itemCode/i), kp = key(/pdf|attach|file/i), kid = key(/^(id|articleId|seq|no)$/i);
+    return arr.map(x => ({ kind, subject: ks ? String(x[ks] ?? '') : '', title: String(x[kt] ?? ''), broker: String(x[kb] ?? ''), date: String(x[kd] ?? '').replace(/(\d{4})(\d{2})(\d{2}).*/, '$1-$2-$3').replace(/\./g, '-').slice(0, 10), pdf: kp && /^https?:/.test(String(x[kp] || '')) ? x[kp] : null, view: kid ? `https://m.stock.naver.com/research/${cat}/${x[kid]}` : null }));
+  }
+  return null;
+}
 const found = [];
 for (const kind of ['company', 'industry', 'invest']) {
   for (let p = 1; p <= 6; p++) {
-    try { const rows = await page(kind, p); found.push(...rows); if (!rows.length) break; } catch (e) { console.log(e.message); break; }
+    let rows = null;
+    try { rows = await apiPage(kind, p); } catch (e) { console.log('api', e.message); }
+    if (rows == null) { try { rows = await page(kind, p); } catch (e) { console.log(e.message); break; } }
+    found.push(...rows); if (!rows.length) break;
     await sleep(500);
   }
 }
