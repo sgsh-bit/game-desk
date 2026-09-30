@@ -206,13 +206,13 @@ tr.past td{opacity:.55}
 
 
 <section class="view" id="view-flow" hidden>
-  <div class="sec-head"><h2>수급 동향</h2><span class="sub">외국인·기관 순매수 (억원, 일별 순매매 주수 × 당일 종가 환산) · 매 거래일 16:40 KST 갱신</span><span class="spacer"></span><span class="stamp" id="flow-stamp"></span></div>
+  <div class="sec-head"><h2>수급 동향</h2><span class="sub">외국인·기관 순매수 거래대금 (억원) · KRX 정보데이터시스템 · 매 거래일 16:40 KST 갱신</span><span class="spacer"></span><span class="stamp" id="flow-stamp"></span></div>
   <div class="tiles" id="flow-tiles"></div>
   <div class="panel"><div class="tablewrap"><table id="flow-table">
     <thead><tr><th>종목</th><th class="num">종가</th><th class="num">등락</th><th class="num">시총</th>
-      <th class="num">외인 1일</th><th class="num">외인 5일</th><th class="num">외인 20일</th><th class="num">기관 1일</th><th class="num">기관 5일</th><th class="num">기관 20일</th><th class="num">외인 보유율</th><th>외인 누적 20일</th></tr></thead>
+      <th class="num">외인 1일</th><th class="num">외인 5일</th><th class="num">외인 20일</th><th class="num">기관 1일</th><th class="num">기관 5일</th><th class="num">기관 20일</th><th class="num">연기금 5일</th><th>외인 누적 20일</th></tr></thead>
     <tbody id="flow-body"><tr><td colspan="12" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
-  <p class="help">정렬: 외인 5일 순매수 순. 스파크라인은 최근 20거래일 외국인 누적 순매수. 데이터: 네이버금융 투자자별 매매동향(장 마감 후 확정치).</p>
+  <p class="help">정렬: 외인 5일 순매수 순. 기관 = 금융투자·보험·투신·사모·은행·기타금융·연기금 합계, 외국인 = 외국인+기타외국인. 스파크라인은 최근 20거래일 외국인 누적 순매수.</p>
 </section>
 
 <section class="view" id="view-val" hidden>
@@ -382,8 +382,8 @@ function recLabel(m,n){if(m==null)return '<span class="rec">–</span>';const t=
 
 /* ---------- 수급 ---------- */
 let market=null;
-function flowKRW(r,k,n){ // Σ shares×close over last n days, in 억원
-  if(!r.flows)return null; let s=0; for(const f of r.flows.slice(0,n)){ if(f[k]!=null&&f.close!=null)s+=f[k]*f.close; } return s/1e8;
+function flowKRW(r,k,n){ // Σ 순매수 거래대금 over last n days (억원, KRX)
+  if(!r.flows||!r.flows.length)return null; let s=0; for(const f of r.flows.slice(0,n)){ s+=(f[k]||0); } return s;
 }
 function renderFlow(){
   if(!market){return;}
@@ -398,9 +398,9 @@ function renderFlow(){
     ['외인 5일 최대 순매도',bot?`${bot.r.name} ${fmt.signed(bot.f5)}억`:'–','neg'],
   ].map(([l,v,c])=>`<div class="tile"><div class="l">${l}</div><div class="v ${c}" style="font-size:18px">${v}</div></div>`).join('');
   $('#flow-body').innerHTML=rows.map(({r,f1,f5,f20,i1,i5,i20})=>{
-    const cum=[];let c=0;for(const f of (r.flows||[]).slice(0,20).reverse()){c+=(f.frgn||0)*(f.close||0)/1e8;cum.push(c);}
+    const cum=[];let c=0;for(const f of (r.flows||[]).slice(0,20).reverse()){c+=(f.frgn||0);cum.push(c);}
     const cell=v=>`<td class="num ${cls(v)}">${fmt.signed(v)}</td>`;
-    return `<tr><td class="name">${esc(r.name)}<div class="pub">${r.code} · ${esc(r.sector)}</div></td><td class="num">${fmt.px(r.price,'KRW')}</td><td class="num ${cls(r.chgPct)}">${fmt.pct(r.chgPct)}</td><td class="num">${fmt.krwBig(r.mcap)}</td>${cell(f1)}${cell(f5)}${cell(f20)}${cell(i1)}${cell(i5)}${cell(i20)}<td class="num">${r.frgnRate!=null?r.frgnRate.toFixed(2)+'%':'–'}</td><td>${spark(cum,{zero:true})}</td></tr>`;}).join('');
+    return `<tr><td class="name">${esc(r.name)}<div class="pub">${r.code} · ${esc(r.sector)}</div></td><td class="num">${fmt.px(r.price,'KRW')}</td><td class="num ${cls(r.chgPct)}">${fmt.pct(r.chgPct)}</td><td class="num">${fmt.krwBig(r.mcap)}</td>${cell(f1)}${cell(f5)}${cell(f20)}${cell(i1)}${cell(i5)}${cell(i20)}${cell(r.sums?.pension5??null)}<td>${spark(cum,{zero:true})}</td></tr>`;}).join('');
 }
 
 /* ---------- 밸류에이션 ---------- */

@@ -13,30 +13,36 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const num = s => { if (s == null) return null; const t = String(s).replace(/[,+%\s]/g, '').replace(/^[▲△]/, '').replace(/^[▼▽]/, '-'); const v = parseFloat(t); return Number.isFinite(v) ? v : null; };
 const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : {};
 
-// ---------- Naver Finance: 외국인·기관 순매매 (일별) ----------
-async function naverFlows(code, pages = 2) {
-  const rows = [];
-  for (let p = 1; p <= pages; p++) {
-    const url = `https://finance.naver.com/item/frgn.naver?code=${code}&page=${p}`;
-    const r = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36', 'accept-language': 'ko-KR,ko;q=0.9,en;q=0.5', accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', referer: 'https://finance.naver.com/item/main.naver?code=' + code }  });
-    if (!r.ok) throw new Error(`naver ${code} HTTP ${r.status}`);
-    const buf = await r.arrayBuffer();
-    const html = new TextDecoder('euc-kr').decode(buf);
-    if (p === 1 && !html.includes('type2')) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'data', 'debug', `naver_${code}.html`), html.slice(0, 200000)); }
-    for (const tr of html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || []) {
-      const tds = [...tr.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(m => m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;|\s+/g, ' ').trim());
-      if (tds.length < 9 || !/^\d{4}\.\d{2}\.\d{2}$/.test(tds[0])) continue;
-      const down = /하락/.test(tr), up = /상승/.test(tr);
-      const chg = num(tds[2]); const pct = num(tds[3]);
-      rows.push({ d: tds[0].replace(/\./g, '-'), close: num(tds[1]), chg: chg == null ? null : (down ? -Math.abs(chg) : up ? Math.abs(chg) : 0), pct: pct == null ? null : (down ? -Math.abs(pct) : up ? Math.abs(pct) : 0),
-        vol: num(tds[4]), inst: num(tds[5]), frgn: num(tds[6]), frgnShares: num(tds[7]), frgnRate: num(tds[8]) });
-    }
-    await sleep(400);
-  }
-  const seen = new Set(); const uniq = rows.filter(x => !seen.has(x.d) && seen.add(x.d)).sort((a, b) => b.d.localeCompare(a.d));
-  if (uniq.length < 5) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); throw new Error(`naver ${code}: parsed ${uniq.length} rows`); }
-  const sum = (k, n) => uniq.slice(0, n).reduce((s, x) => s + (x[k] || 0), 0);
-  return { flows: uniq.slice(0, 40), sums: { frgn1: sum('frgn', 1), frgn5: sum('frgn', 5), frgn20: sum('frgn', 20), inst1: sum('inst', 1), inst5: sum('inst', 5), inst20: sum('inst', 20) }, frgnRate: uniq[0].frgnRate, asOf: uniq[0].d };
+// ---------- KRX 정보데이터시스템: 투자자별 순매수 거래대금 (일별, 원) ----------
+const KRX = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd';
+const KRX_HDR = { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36', referer: 'https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201020203', 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', 'x-requested-with': 'XMLHttpRequest', accept: 'application/json, text/javascript, */*; q=0.01', origin: 'https://data.krx.co.kr' };
+async function krxPost(params) {
+  const r = await fetch(KRX, { method: 'POST', headers: KRX_HDR, body: new URLSearchParams(params).toString() });
+  const txt = await r.text();
+  try { return JSON.parse(txt); } catch { throw new Error(`krx non-JSON (${r.status}): ${txt.slice(0, 100)}`); }
+}
+const isinCache = {};
+async function krxIsin(code) {
+  if (isinCache[code]) return isinCache[code];
+  const j = await krxPost({ bld: 'dbms/comm/finder/finder_stkisu', locale: 'ko_KR', mktsel: 'ALL', typeNo: '0', searchText: code });
+  const hit = (j.block1 || []).find(x => x.short_code === code) || (j.block1 || [])[0];
+  if (!hit?.full_code) throw new Error(`krx isin ${code}: ${JSON.stringify(j).slice(0, 120)}`);
+  return (isinCache[code] = hit.full_code);
+}
+const ymd = d => d.toISOString().slice(0, 10).replace(/-/g, '');
+async function krxFlows(code) {
+  const isin = await krxIsin(code);
+  const end = new Date(), start = new Date(end.getTime() - 70 * 86400000);
+  const j = await krxPost({ bld: 'dbms/MDC/STAT/standard/MDCSTAT02303', locale: 'ko_KR', inqTpCd: '2', trdVolVal: '2', askBid: '3', tboxisuCd_finder_stkisu0_0: code, isuCd: isin, isuCd2: '', codeNmisuCd_finder_stkisu0_0: '', param1isuCd_finder_stkisu0_0: 'ALL', strtDd: ymd(start), endDd: ymd(end), share: '1', money: '1', csvxls_isNo: 'false' });
+  const out = j.output || j.OutBlock_1 || [];
+  if (!out.length) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'data', 'debug', `krx_${code}.json`), JSON.stringify(j).slice(0, 20000)); throw new Error(`krx ${code}: empty output`); }
+  // TRDVAL1..7 = 금융투자·보험·투신·사모·은행·기타금융·연기금 (기관 합계), 8 기타법인, 9 개인, 10 외국인, 11 기타외국인 — 단위: 원
+  const rows = out.map(x => { const v = k => num(x[k]); const inst = [1,2,3,4,5,6,7].reduce((s, i) => s + (v('TRDVAL' + i) || 0), 0);
+    return { d: String(x.TRD_DD).replace(/\//g, '-'), inst: inst / 1e8, frgn: ((v('TRDVAL10') || 0) + (v('TRDVAL11') || 0)) / 1e8, indiv: (v('TRDVAL9') || 0) / 1e8, pension: (v('TRDVAL7') || 0) / 1e8, corp: (v('TRDVAL8') || 0) / 1e8 }; })
+    .filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x.d)).sort((a, b) => b.d.localeCompare(a.d));
+  if (rows.length < 5) throw new Error(`krx ${code}: ${rows.length} rows`);
+  const sum = (k, n) => rows.slice(0, n).reduce((s, x) => s + (x[k] || 0), 0);
+  return { flows: rows.slice(0, 40), unit: '억원', sums: { frgn1: sum('frgn', 1), frgn5: sum('frgn', 5), frgn20: sum('frgn', 20), inst1: sum('inst', 1), inst5: sum('inst', 5), inst20: sum('inst', 20), indiv5: sum('indiv', 5), pension5: sum('pension', 5) }, asOf: rows[0].d };
 }
 
 // ---------- Yahoo: 밸류에이션·컨센서스·수익률 ----------
@@ -77,7 +83,8 @@ for (const s of KR) {
   const row = { ...s, sym };
   const old = (prev.kr || []).find(x => x.code === s.code) || {};
   try { Object.assign(row, await yahoo(sym)); } catch (e) { result.failures.push(`yahoo ${sym}: ${e.message}`); log(`yahoo FAIL ${sym}: ${e.message}`); Object.assign(row, pick(old, ['price','chgPct','ccy','mcap','per','fwdPer','pbr','evEbitda','divYield','hi52','lo52','target','recMean','recKey','nAnalysts','upside','ret','spark','revGrowth','opMargin'])); }
-  try { Object.assign(row, await naverFlows(s.code)); } catch (e) { result.failures.push(`naver ${s.code}: ${e.message}`); log(`naver FAIL ${s.code}: ${e.message}`); Object.assign(row, pick(old, ['flows','sums','frgnRate','asOf'])); }
+  try { Object.assign(row, await krxFlows(s.code)); } catch (e) { result.failures.push(`krx ${s.code}: ${e.message}`); log(`krx FAIL ${s.code}: ${e.message}`); Object.assign(row, pick(old, ['flows','sums','unit','asOf'])); }
+  await sleep(700);
   result.kr.push(row); await sleep(300);
 }
 for (const g of GLOBAL) {
