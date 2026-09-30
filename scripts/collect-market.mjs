@@ -134,10 +134,10 @@ for (const s of KR) {
   try { Object.assign(row, await yahoo(sym)); } catch (e) { result.failures.push(`yahoo ${sym}: ${e.message}`); log(`yahoo FAIL ${sym}: ${e.message}`); Object.assign(row, pick(old, ['price','chgPct','ccy','mcap','per','fwdPer','pbr','evEbitda','divYield','hi52','lo52','target','recMean','recKey','nAnalysts','upside','ret','spark','revGrowth','opMargin'])); }
   try { Object.assign(row, await krxFlows(s.code)); row.src = 'krx'; }
   catch (e1) { log(`krx FAIL ${s.code}: ${e1.message.slice(0, 80)}`);
-    try { Object.assign(row, await naverTrend(s.code, s === KR[0])); }
+    try { Object.assign(row, await naverTrend(s.code, !!process.env.DEBUG && s === KR[0])); }
     catch (e2) { result.failures.push(`flows ${s.code}: krx=${e1.message.slice(0, 40)} naver=${e2.message.slice(0, 200)}`); log(`naver FAIL ${s.code}`); Object.assign(row, pick(old, ['flows','sums','unit','asOf','frgnRate','src'])); } }
   await sleep(700);
-  try { const n = await naverIntegration(s.code, s === KR[0]); if (n.nPer != null) row.per = n.nPer; if (n.nPbr != null) row.pbr = n.nPbr; if (n.nDiv != null) row.divYield = n.nDiv; if (n.nCnsPer != null) row.cnsPer = n.nCnsPer; if (n.nFrgn != null) row.frgnRate = n.nFrgn; } catch (e) { log(`integration ${s.code}: ${e.message}`); }
+  try { const n = await naverIntegration(s.code, !!process.env.DEBUG && s === KR[0]); if (n.nPer != null) row.per = n.nPer; if (n.nPbr != null) row.pbr = n.nPbr; if (n.nDiv != null) row.divYield = n.nDiv; if (n.nCnsPer != null) row.cnsPer = n.nCnsPer; if (n.nFrgn != null) row.frgnRate = n.nFrgn; } catch (e) { log(`integration ${s.code}: ${e.message}`); }
   result.kr.push(row); await sleep(300);
 }
 for (const g of GLOBAL) {

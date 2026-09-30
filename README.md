@@ -19,3 +19,6 @@
 - 뉴스 `data/news.json` ← Google News RSS, 3시간마다
 - 리포트 `data/reports.json` ← 네이버 리서치(현대차증권 필터, `REPORT_BROKER` env로 변경 가능) + `data/reports_manual.json` 수동 등록
   - 수동 등록 형식: `[{"date":"2026-10-01","kind":"company","subject":"엔씨소프트","title":"...","url":"https://..."}]`
+- 실적 `data/earnings.json` ← 네이버증권 분기/연간 재무(FnGuide 컨센서스 E 포함), 평일 18:10
+- 공시 `data/dart.json` ← OpenDART (Secret `OPENDART_API_KEY`), 매시
+- 매크로 `data/macro.json` ← 지수·환율·금리 (야후), 매시

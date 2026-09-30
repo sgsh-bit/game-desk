@@ -37,12 +37,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* top bar */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line)}
-.top .in{max-width:1180px;margin:0 auto;padding-inline:16px;display:flex;align-items:center;gap:16px;min-height:52px;flex-wrap:wrap}
+.top .in{max-width:1180px;margin:0 auto;padding-inline:16px;display:flex;align-items:center;gap:16px;min-height:52px;flex-wrap:nowrap}
+.brand .clock{display:none}
+@media (min-width:1400px){.brand .clock{display:inline}}
 .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
 .brand h1{font-size:16px;font-weight:700;margin:0;letter-spacing:-.01em;white-space:nowrap}
 .brand .clock{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
-.tabs{display:flex;gap:2px;margin-left:auto}
-.tabs button{border:0;background:none;padding:14px 12px;font-weight:500;color:var(--fg2);border-bottom:2px solid transparent;cursor:pointer}
+.tabs{display:flex;gap:0;margin-left:auto;overflow-x:auto;scrollbar-width:none;min-width:0;flex:0 1 auto}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;border:0;background:none;padding:15px 10px;font-weight:500;color:var(--fg2);border-bottom:2px solid transparent;cursor:pointer}
 .tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
 .tabs button:focus-visible,.chip:focus-visible,.btn:focus-visible,.icon:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -131,6 +134,10 @@ tr.past td{opacity:.55}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media (max-width:760px){
+  .top .in{flex-wrap:wrap;gap:0}
+  .brand{padding-top:10px}
+}
 @media (max-width:640px){
   .week-strip{grid-template-columns:repeat(4,1fr)}
   .tabs{margin-left:0;width:100%;overflow-x:auto}
@@ -164,6 +171,24 @@ tr.past td{opacity:.55}
 .news-card li a:hover{text-decoration:underline}
 .news-card li .m{font-size:11px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
 .badge{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:3px;background:var(--accent-soft);color:var(--accent)}
+
+.macro{display:flex;gap:0;overflow-x:auto;background:var(--panel);border-bottom:1px solid var(--line);scrollbar-width:thin}
+.macro .m{flex:0 0 auto;display:grid;grid-template-columns:auto auto;column-gap:8px;align-items:center;padding:6px 14px;border-right:1px solid var(--line2);font-variant-numeric:tabular-nums}
+.macro .m:first-child{margin-left:max(16px,calc((100vw - 1180px)/2))}
+.macro .n{font-size:11px;color:var(--muted);grid-column:1/3}
+.macro .p{font-family:var(--mono);font-size:13px;font-weight:600}
+.macro .c{font-family:var(--mono);font-size:11.5px}
+.macro svg{grid-column:1/3;width:84px;height:16px;display:block}
+tr.sub-h th{font-size:10.5px;padding-top:0;border-bottom:1px solid var(--line)}
+thead tr:first-child th[colspan]{text-align:center;border-bottom:1px solid var(--line2)}
+.est{color:var(--muted)}
+.bars{display:block;width:120px;height:30px}
+.wl-name{cursor:pointer;border-bottom:1px dotted var(--muted)}
+.wl-name:hover{color:var(--accent)}
+tr.sel td{background:var(--accent-soft)}
+.hist{margin-top:12px;padding:12px}
+.hist h3{margin:0 0 4px;font-size:14px}
+.tagc{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:3px;color:#fff;background:var(--c);white-space:nowrap}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:grid;gap:6px;max-width:80ch}
 </style>
 </head>
@@ -176,12 +201,15 @@ tr.past td{opacity:.55}
     <button role="tab" data-tab="cal" aria-selected="false">이벤트 캘린더</button>
     <button role="tab" data-tab="flow" aria-selected="false">수급</button>
     <button role="tab" data-tab="val" aria-selected="false">밸류에이션</button>
+    <button role="tab" data-tab="earn" aria-selected="false">실적</button>
+    <button role="tab" data-tab="dart" aria-selected="false">공시</button>
     <button role="tab" data-tab="ind" aria-selected="false">산업데이터</button>
     <button role="tab" data-tab="ccu" aria-selected="false">스팀 동접</button>
     <button role="tab" data-tab="news" aria-selected="false">뉴스</button>
     <button role="tab" data-tab="rep" aria-selected="false">리포트</button>
   </nav>
 </div></header>
+<div class="macro" id="macro" aria-label="시장 지표"></div>
 
 <div class="wrap">
 <div class="notice" id="notice" hidden></div>
@@ -201,7 +229,8 @@ tr.past td{opacity:.55}
     </tr></thead>
     <tbody id="wl-body"><tr><td colspan="11" class="empty">데이터를 불러오는 중…</td></tr></tbody>
   </table></div></div>
-  <p class="help">순위 범위: Apple·Google 최고매출 게임 Top 50, Steam 주간 최다판매(매출 기준) Top 50. 범위 밖이면 "–". Apple은 페이지를 열 때 실시간 피드로 갱신, Google·Steam은 매시 자동 수집분.</p>
+  <div class="panel hist" id="wl-hist" hidden></div>
+  <p class="help">게임 이름을 누르면 스토어별 순위 추이(일별)를 볼 수 있습니다. 순위 범위: Apple·Google 최고매출 게임 Top 50, Steam 주간 최다판매(매출 기준) Top 50. 범위 밖이면 "–". Apple은 페이지를 열 때 실시간 피드로 갱신, Google·Steam은 매시 자동 수집분.</p>
 </section>
 
 <section class="view" id="view-rank" hidden>
@@ -239,6 +268,27 @@ tr.past td{opacity:.55}
       <th class="num">PER(T)</th><th class="num">PER(F)</th><th class="num">PBR</th><th class="num">EV/EBITDA</th><th class="num">목표가</th><th class="num">상승여력</th><th>투자의견</th><th>60일</th></tr></thead>
     <tbody id="val-body"><tr><td colspan="15" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
   <p class="help">국내 PER(T)·PBR은 최근 결산 기준(네이버증권), PER(F)는 국내 = 당해연도 추정 PER(FnGuide 컨센서스), 해외 = 12M forward(LSEG). 투자의견 척도 1(강력매수)~5(매도), 괄호는 커버 애널리스트 수. 시총: 원화 조원 / 해외는 현지통화 십억. 소형주는 컨센서스가 없을 수 있음(–).</p>
+</section>
+
+<section class="view" id="view-earn" hidden>
+  <div class="sec-head"><h2>실적 · 컨센서스</h2><span class="sub">분기 확정치(A)와 FnGuide 컨센서스 추정치(E) · 억원 · 연결 기준</span><span class="spacer"></span><span class="stamp" id="earn-stamp"></span></div>
+  <div class="wl-tools"><button class="btn" id="earn-copy">텔레그램용 복사</button><span class="help">다음 분기 컨센서스와 실적발표 예정일을 한 번에 봅니다.</span></div>
+  <div class="panel"><div class="tablewrap"><table id="earn-table">
+    <thead><tr><th>종목</th><th>발표 예정</th>
+      <th class="num" colspan="3">최근 확정 분기</th><th class="num" colspan="4">다음 분기 컨센서스</th><th class="num" colspan="3">연간 컨센서스</th><th>분기 영업이익</th></tr>
+      <tr class="sub-h"><th></th><th></th><th class="num">분기</th><th class="num">매출</th><th class="num">영업이익</th><th class="num">분기</th><th class="num">매출E</th><th class="num">영업이익E</th><th class="num">OP YoY</th><th class="num">전년 OP</th><th class="num">올해 OP E</th><th class="num">OP 성장</th><th></th></tr></thead>
+    <tbody id="earn-body"><tr><td colspan="13" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">E = 컨센서스 추정치(네이버증권·FnGuide). 막대 차트는 최근 분기 영업이익, 옅은 막대가 추정치. 발표 예정일은 이벤트 캘린더에서 연결되며 "예상"일 수 있습니다.</p>
+</section>
+
+<section class="view" id="view-dart" hidden>
+  <div class="sec-head"><h2>DART 공시</h2><span class="sub">커버리지 종목 전자공시 · 매시 갱신</span><span class="spacer"></span><span class="stamp" id="dart-stamp"></span></div>
+  <div class="chips" id="dart-chips" style="margin-bottom:8px"></div>
+  <div class="chips" id="dart-co" style="margin-bottom:12px"></div>
+  <div class="panel"><div class="tablewrap"><table id="dart-table">
+    <thead><tr><th>접수일</th><th>종목</th><th>유형</th><th>공시 제목</th><th>제출인</th></tr></thead>
+    <tbody id="dart-body"><tr><td colspan="5" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <p class="help">공시 제목을 누르면 DART 원문이 열립니다. 유형은 제목 기준 자동 분류입니다.</p>
 </section>
 
 <section class="view" id="view-ind" hidden>
@@ -310,7 +360,7 @@ const charts={}; let watch=[], events=[]; let rankFilter='apple', calFilter='all
 
 function showTab(t){$$('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$$('section.view').forEach(s=>s.hidden=(s.id!=='view-'+t));try{localStorage.setItem('tab',t)}catch(e){}}
 $$('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
-(function(){let t='watch';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(watch|rank|cal|flow|val|ind|ccu|news|rep)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
+(function(){let t='watch';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(watch|rank|cal|flow|val|earn|dart|ind|ccu|news|rep)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
 
 function deltaHTML(d,hasPrev){
   if(!hasPrev)return '';
@@ -327,7 +377,7 @@ function renderWatch(){
     const cells=STORES.map(s=>{const doc=charts[s.id];if(!doc||!doc.items)return '<td class="num"><span class="cell"><span class="r none">·</span></span></td>';
       const hit=doc.items.find(it=>matchItem(it,w.keys));if(!hit)return '<td class="num"><span class="cell"><span class="r none">–</span></span></td>';
       return `<td class="num"><span class="cell"><span class="r">${hit.r}</span>${deltaHTML(hit.d,!!doc.prevDate)}</span></td>`;}).join('');
-    return `<tr><td class="name">${esc(w.name)}</td><td class="pub">${esc(w.co||'')}</td>${cells}</tr>`;}).join('');
+    return `<tr class="${wlSel===w.id?'sel':''}"><td class="name"><span class="wl-name" data-w="${esc(w.id)}" role="button" tabindex="0">${esc(w.name)}</span></td><td class="pub">${esc(w.co||'')}</td>${cells}</tr>`;}).join('');
   const stamps=STORES.map(s=>charts[s.id]?.fetchedAt).filter(Boolean).sort();
   $('#wl-stamp').textContent=stamps.length?`최종 수집 ${fmtStamp(stamps[stamps.length-1])}`:'';
 }
@@ -481,7 +531,7 @@ function renderInd(k){
   ].map(([l,v,d,c])=>`<div class="tile"><div class="l">${l}</div><div class="v">${v}</div><div class="d ${c}">${d}</div></div>`).join('');
   // chart: 24 months, total vs mobile
   const pts=P.slice(-24), mpts=mob?mob.points.filter(p=>pts.some(q=>q[0]===p[0])):[];
-  const W=720,H=220,L=48,R=30,T=14,B=28; const xs=pts.map((p,i)=>L+i*(W-L-R)/(pts.length-1));
+  const W=1100,H=300,L=48,R=30,T=14,B=28; const xs=pts.map((p,i)=>L+i*(W-L-R)/(pts.length-1));
   const vmax=Math.max(...pts.map(p=>toJo(p[1])),...mpts.map(p=>toJo(p[1])))*1.08, vmin=0;
   const Y=v=>T+(1-(v-vmin)/(vmax-vmin))*(H-T-B);
   const ticks=[];const step=vmax>20?5:vmax>8?2:1;for(let v=0;v<=vmax;v+=step)ticks.push(v);
@@ -564,6 +614,103 @@ function renderRep(){
 (async()=>{
   try{newsData=await getJSON('data/news.json');}catch(e){} renderNews();
   try{repData=await getJSON('data/reports.json');}catch(e){} renderRep();
+})();
+
+
+/* ---------- 매크로 티커 ---------- */
+(async()=>{try{const m=await getJSON('data/macro.json');$('#macro').innerHTML=m.items.map(i=>{const up=(i.chgPct||0)>=0;const d=i.unit==='%'?(i.price!=null?i.price.toFixed(2)+'%':'–'):fmt.n(i.price,i.price<50?2:i.price<2000?1:0);
+  return `<div class="m" title="${esc(i.sym)} · ${fmtStamp(i.time)}"><span class="n">${esc(i.name)}</span><span class="p">${d}</span><span class="c ${cls(i.chgPct)}">${fmt.pct(i.chgPct,2)}</span>${spark(i.spark,{w:84,h:16,color:up?'var(--up)':'var(--down)'})}</div>`;}).join('');}catch(e){$('#macro').hidden=true;}})();
+
+/* ---------- 워치리스트 순위 추이 ---------- */
+const HIST={}; async function hist(id){if(!HIST[id]){try{HIST[id]=await getJSON(`data/history/${id}.json`);}catch(e){HIST[id]={};}}return HIST[id];}
+const SERIES_C=['#1A5FD6','#6FA3FF','#0B3D91','#8FB8F2','#0F7B5F','#4FD1A5','#0A5A45','#5B4BC4','#A99BFF'];
+let wlSel=null;
+async function showHist(w){
+  const box=$('#wl-hist'); if(wlSel===w.id){wlSel=null;box.hidden=true;renderWatch();return;} wlSel=w.id; renderWatch();
+  box.hidden=false; box.innerHTML='<div class="empty">순위 이력을 불러오는 중…</div>';
+  const keys=w.keys.map(k=>k.toLowerCase()); const series=[]; let allDates=new Set();
+  for(const [i,s] of STORES.entries()){
+    const h=await hist(s.id); const doc=charts[s.id];
+    const ids=new Set((doc?.items||[]).filter(it=>matchItem(it,w.keys)).map(it=>String(it.id))); keys.forEach(k=>ids.add(k));
+    const pts=Object.keys(h).sort().slice(-30).map(d=>{const hit=h[d].find(([r,id])=>ids.has(String(id))||ids.has(String(id).toLowerCase()));return [d,hit?hit[0]:null];});
+    if(pts.some(p=>p[1]!=null)){series.push({label:s.label.replace('App Store','Apple').replace('Google Play','Google'),color:SERIES_C[i],pts});pts.forEach(p=>allDates.add(p[0]));}
+  }
+  const dates=[...allDates].sort();
+  if(!series.length){box.innerHTML=`<h3>${esc(w.name)}</h3><div class="empty">최근 30일 Top 50 진입 이력이 없습니다.</div>`;return;}
+  if(dates.length<2){box.innerHTML=`<h3>${esc(w.name)} · 순위 추이</h3><div class="help">이력이 ${dates.length}일치뿐입니다. 매일 스냅샷이 쌓이면 추이 차트가 그려집니다.</div><div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${s.label} ${s.pts.find(p=>p[1]!=null)[1]}위</span>`).join('')}</div>`;return;}
+  const W=1100,H=260,L=36,R=16,T=12,B=26,X=i=>L+i*(W-L-R)/(dates.length-1),Y=r=>T+(r-1)/49*(H-T-B);
+  const grid=[1,10,20,30,40,50].map(r=>`<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(r)}" y2="${Y(r)}"/><text x="${L-6}" y="${Y(r)+4}" text-anchor="end">${r}</text>`).join('');
+  const xl=dates.map((d,i)=>i%Math.ceil(dates.length/8)===0||i===dates.length-1?`<text x="${X(i)}" y="${H-6}" text-anchor="middle">${d.slice(5).replace('-','/')}</text>`:'').join('');
+  const lines=series.map(s=>{let path='',pen=false;const m=new Map(s.pts);dates.forEach((d,i)=>{const r=m.get(d);if(r==null){pen=false;return;}path+=(pen?'L':'M')+X(i).toFixed(1)+','+Y(r).toFixed(1);pen=true;});
+    const lastI=dates.map(d=>m.get(d)).map((r,i)=>r!=null?i:-1).filter(i=>i>=0).pop();const lr=m.get(dates[lastI]);
+    return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(lastI)}" cy="${Y(lr)}" r="4" fill="${s.color}" stroke="var(--panel)" stroke-width="2"><title>${s.label} ${lr}위</title></circle>`;}).join('');
+  box.innerHTML=`<h3>${esc(w.name)} · 스토어별 순위 추이 <span class="stamp">최근 ${dates.length}일 · 위쪽일수록 상위</span></h3><div class="legend" style="flex-wrap:wrap">${series.map(s=>{const l=s.pts.filter(p=>p[1]!=null).pop();return `<span><i style="background:${s.color}"></i>${s.label} ${l[1]}위</span>`;}).join('')}</div><div class="chart"><svg viewBox="0 0 ${W} ${H}">${grid}${xl}${lines}</svg></div>`;
+}
+document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const t=e.target.closest&&e.target.closest('.wl-name');if(t)t.click();});
+document.addEventListener('click',e=>{const t=e.target.closest('.wl-name');if(!t)return;const w=watch.find(x=>x.id===t.dataset.w);if(w)showHist(w);});
+
+/* ---------- 실적 · 컨센서스 ---------- */
+let earn=null;
+// 성장률: 적자 구간은 흑전/적전/적지로 표기
+function growth(cur,base){if(cur==null||base==null)return null;if(base>0&&cur>0)return (cur/base-1)*100;if(base<=0&&cur>0)return '흑전';if(base>0&&cur<=0)return '적전';return '적지';}
+function gCell(v){if(v==null)return '–';if(typeof v==='string')return `<span class="${v==='흑전'?'pos':v==='적전'?'neg':''}">${v}</span>`;return `<span class="${cls(v)}">${Math.abs(v)>=1000?(v>0?'+':'')+'>999%':fmt.pct(v,0)}</span>`;}
+const eok=v=>v==null?'–':Math.abs(v)>=10000?(v/10000).toFixed(2)+'조':fmt.n(v)+'억';
+function earnRows(){
+  if(!earn)return [];
+  return Object.entries(earn.companies).map(([code,c])=>{
+    const Q=c.quarter,A=c.annual; const P=Q.periods;
+    const lastA=P.map((p,i)=>!p.est?i:-1).filter(i=>i>=0).pop(); const nextE=P.findIndex((p,i)=>p.est&&i>(lastA??-1));
+    const yoyIdx=i=>{if(i<0)return -1;const [y,m]=P[i].label.split('.');return P.findIndex(p=>p.label===`${+y-1}.${m}`);};
+    const yo=(arr,i)=>{const j=yoyIdx(i);return j>=0?growth(arr[i],arr[j]):null;};
+    const AP=A.periods; const thisY=String(new Date().getFullYear()); const ai=AP.findIndex(p=>p.label.startsWith(thisY)); const ni=AP.findIndex(p=>p.label.startsWith(String(+thisY-1)));
+    const ev=events.filter(e=>e.cat==='earnings'&&e.title.includes(c.name.replace('삼성에스디에스','삼성SDS'))&&e.date>=todayKST()).sort((a,b)=>a.date.localeCompare(b.date))[0]
+      ||events.filter(e=>e.cat==='earnings'&&e.title.includes(c.name)).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    return {code,name:c.name,sector:c.sector,P,Q,lastA,nextE,ev,
+      aLab:lastA>=0?P[lastA].label:'–',aRev:lastA>=0?Q.rev[lastA]:null,aOp:lastA>=0?Q.op[lastA]:null,aOpY:lastA>=0?yo(Q.op,lastA):null,
+      eLab:nextE>=0?P[nextE].label:'–',eRev:nextE>=0?Q.rev[nextE]:null,eOp:nextE>=0?Q.op[nextE]:null,eOpY:nextE>=0?yo(Q.op,nextE):null,
+      yOp:ai>=0?A.op[ai]:null,nOp:ni>=0?A.op[ni]:null,yLab:ai>=0?AP[ai].label:'',g:ai>=0&&ni>=0?growth(A.op[ai],A.op[ni]):null};
+  });
+}
+function bars(Q){const v=Q.op;const n=v.length;if(!n)return '';const w=120,h=30,bw=Math.min(12,(w-4)/n-3);const mx=Math.max(...v.map(x=>Math.abs(x||0)),1);const zero=v.some(x=>x<0)?h/2:h-2;
+  return `<svg class="bars" viewBox="0 0 ${w} ${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${zero}" y2="${zero}" stroke="var(--line)"/>${v.map((x,i)=>{if(x==null)return '';const bh=Math.abs(x)/mx*(zero-2);const X=2+i*((w-4)/n);const y=x>=0?zero-bh:zero;return `<rect x="${X}" y="${y}" width="${bw}" height="${Math.max(bh,1)}" rx="2" fill="${x>=0?'var(--accent)':'var(--down)'}" opacity="${Q.periods[i].est?.35:1}"><title>${Q.periods[i].label}${Q.periods[i].est?'E':''} ${fmt.n(x)}억</title></rect>`;}).join('')}</svg>`;}
+function renderEarn(){
+  const body=$('#earn-body'); if(!earn||!Object.keys(earn.companies).length){body.innerHTML='<tr><td colspan="13" class="empty">실적 데이터가 아직 수집되지 않았습니다 (평일 18:10 KST).</td></tr>';return;}
+  $('#earn-stamp').textContent='수집 '+fmtStamp(earn.generatedAt);
+  const rows=earnRows().sort((a,b)=>(a.ev?.date||'9999').localeCompare(b.ev?.date||'9999'));
+  body.innerHTML=rows.map(r=>`<tr><td class="name">${esc(r.name)}<div class="pub">${r.code} · ${esc(r.sector)}</div></td>
+    <td class="date">${r.ev?`${r.ev.date.slice(5).replace('-','/')}<span class="dow">${dowOf(r.ev.date)}</span><div class="conf ${r.ev.conf==='예상'?'est':''}">${esc(r.ev.conf||'')}</div>`:'<span class="pub">–</span>'}</td>
+    <td class="num pub">${esc(r.aLab)}</td><td class="num">${eok(r.aRev)}</td><td class="num">${eok(r.aOp)}${r.aOpY!=null?`<div class="delta">${gCell(r.aOpY)}</div>`:''}</td>
+    <td class="num pub">${esc(r.eLab)}${r.nextE>=0?'E':''}</td><td class="num">${eok(r.eRev)}</td><td class="num"><b>${eok(r.eOp)}</b></td><td class="num">${gCell(r.eOpY)}</td>
+    <td class="num">${eok(r.nOp)}</td><td class="num"><b>${eok(r.yOp)}</b></td><td class="num">${gCell(r.g)}</td><td>${bars(r.Q)}</td></tr>`).join('');
+}
+$('#earn-copy').addEventListener('click',()=>{
+  const rows=earnRows().filter(r=>r.eOp!=null).sort((a,b)=>(a.ev?.date||'9999').localeCompare(b.ev?.date||'9999'));
+  const lines=['[인터넷/게임 실적 컨센서스] (억원, FnGuide 컨센서스)'];
+  rows.forEach(r=>lines.push(`・${r.name}${r.ev?` (${r.ev.date.slice(5).replace('-','/')}${r.ev.conf==='예상'?' 예상':''})`:''} → ${r.eLab}E 매출 ${eok(r.eRev)} | OP ${eok(r.eOp)}${r.eOpY!=null?` (${typeof r.eOpY==='string'?r.eOpY:fmt.pct(r.eOpY,0)+' YoY'})`:''}`));
+  const txt=lines.join('\n');const done=()=>toast('복사됨');const fb=()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('복사 실패');}ta.remove();};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(fb);else fb();
+});
+
+/* ---------- DART 공시 ---------- */
+let dart=null,dartTag='all',dartCo='all';
+const TAGC={실적:'#C8102E',자사주:'#0F7B5F',배당:'#0F7B5F',자본:'#8A5A00','M&A':'#5B4BC4',지분:'#1A5FD6',계약:'#0F7B5F',IR:'#6B7280',리스크:'#C8102E',정기:'#6B7280',기타:'#9AA3B2'};
+function renderDart(){
+  const body=$('#dart-body'); if(!dart){body.innerHTML='<tr><td colspan="5" class="empty">DART 공시가 아직 연결되지 않았습니다. OpenDART 인증키를 저장소 Secret(OPENDART_API_KEY)에 등록하면 매시 자동 수집됩니다.</td></tr>';return;}
+  $('#dart-stamp').textContent='수집 '+fmtStamp(dart.generatedAt);
+  const tags=['all',...Object.keys(TAGC).filter(t=>dart.items.some(x=>x.tag===t))];
+  $('#dart-chips').innerHTML=tags.map(t=>`<button class="chip" data-t="${t}" aria-pressed="${dartTag===t}">${t==='all'?'전체 유형':t}<span class="n">${t==='all'?dart.items.length:dart.items.filter(x=>x.tag===t).length}</span></button>`).join('');
+  const cos=['all',...[...new Set(dart.items.map(x=>x.name))]];
+  $('#dart-co').innerHTML=cos.map(c=>`<button class="chip" data-c="${esc(c)}" aria-pressed="${dartCo===c}">${c==='all'?'전체 종목':esc(c)}</button>`).join('');
+  $$('#dart-chips .chip').forEach(b=>b.addEventListener('click',()=>{dartTag=b.dataset.t;renderDart();}));
+  $$('#dart-co .chip').forEach(b=>b.addEventListener('click',()=>{dartCo=b.dataset.c;renderDart();}));
+  const list=dart.items.filter(x=>(dartTag==='all'||x.tag===dartTag)&&(dartCo==='all'||x.name===dartCo)).slice(0,150);
+  body.innerHTML=list.map(x=>`<tr><td class="date">${x.date.slice(5).replace('-','/')}<span class="dow">${dowOf(x.date)}</span></td><td class="name">${esc(x.name)}</td><td><span class="tagc" style="--c:${TAGC[x.tag]||'#9AA3B2'}">${esc(x.tag)}</span></td><td><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${esc(x.rcp)}" target="_blank" rel="noopener">${esc(x.title)}</a>${x.rm?` <span class="stamp">${esc(x.rm)}</span>`:''}</td><td class="pub">${esc(x.filer)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">해당 공시 없음</td></tr>';
+}
+(async()=>{
+  try{earn=await getJSON('data/earnings.json');}catch(e){} 
+  try{dart=await getJSON('data/dart.json');}catch(e){}
+  const wait=()=>new Promise(r=>{const t=setInterval(()=>{if(events.length){clearInterval(t);r();}},100);setTimeout(()=>{clearInterval(t);r();},4000);});
+  await wait(); renderEarn(); renderDart();
 })();
 
 /* ---------- data loading ---------- */
