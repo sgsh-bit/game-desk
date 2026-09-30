@@ -582,7 +582,7 @@ function renderCal(){
 const fmt={
   n:(v,d=0)=>v==null||isNaN(v)?'–':Number(v).toLocaleString('ko-KR',{maximumFractionDigits:d,minimumFractionDigits:d}),
   pct:(v,d=1)=>v==null||isNaN(v)?'–':(v>0?'+':'')+Number(v).toFixed(d)+'%',
-  signed:(v,d=0)=>{if(v==null||isNaN(v))return '–';const r=Math.round(v*10**d)/10**d;return (r>0?'+':'')+r.toLocaleString('ko-KR',{maximumFractionDigits:d});},
+  signed:(v,d=0)=>{if(v==null||isNaN(v))return '–';let r=Math.round(v*10**d)/10**d;if(Object.is(r,-0)||r===0)r=0;return (r>0?'+':'')+r.toLocaleString('ko-KR',{maximumFractionDigits:d});},
   krwBig:v=>{if(v==null)return '–';const jo=v/1e12;return jo>=1?jo.toFixed(1)+'조':(v/1e8).toFixed(0)+'억';},
   ccyBig:(v,ccy)=>{if(v==null)return '–';const b=v/1e9;return (ccy==='USD'?'$':ccy==='HKD'?'HK$':ccy==='JPY'?'¥':ccy==='EUR'?'€':ccy==='PLN'?'zł':'')+(b>=100?b.toFixed(0):b.toFixed(1))+'B';},
   px:(v,ccy)=>v==null?'–':(ccy==='KRW'||!ccy?Number(v).toLocaleString('ko-KR',{maximumFractionDigits:0}):Number(v).toLocaleString('en-US',{maximumFractionDigits:v<20?2:v<1000?1:0})),
