@@ -74,7 +74,9 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 th{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);background:var(--panel);white-space:nowrap}
 td{padding:7px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}
 tr:last-child td{border-bottom:0}
-td.num,th.num{text-align:right;font-family:var(--mono)}
+td.num,th.num{text-align:right;font-family:var(--mono);white-space:nowrap}
+.rec{white-space:nowrap}
+#val-table .pub,#flow-table .pub{white-space:nowrap}
 td.rank{font-family:var(--mono);font-weight:600;color:var(--fg2);width:44px;text-align:right}
 .name{font-weight:500}
 .pub{color:var(--muted);font-size:12px}
@@ -390,7 +392,7 @@ function renderCal(){
 const fmt={
   n:(v,d=0)=>v==null||isNaN(v)?'–':Number(v).toLocaleString('ko-KR',{maximumFractionDigits:d,minimumFractionDigits:d}),
   pct:(v,d=1)=>v==null||isNaN(v)?'–':(v>0?'+':'')+Number(v).toFixed(d)+'%',
-  signed:(v,d=0)=>v==null||isNaN(v)?'–':(v>0?'+':'')+Number(v).toLocaleString('ko-KR',{maximumFractionDigits:d}),
+  signed:(v,d=0)=>{if(v==null||isNaN(v))return '–';const r=Math.round(v*10**d)/10**d;return (r>0?'+':'')+r.toLocaleString('ko-KR',{maximumFractionDigits:d});},
   krwBig:v=>{if(v==null)return '–';const jo=v/1e12;return jo>=1?jo.toFixed(1)+'조':(v/1e8).toFixed(0)+'억';},
   ccyBig:(v,ccy)=>{if(v==null)return '–';const b=v/1e9;return (ccy==='USD'?'$':ccy==='HKD'?'HK$':ccy==='JPY'?'¥':ccy==='EUR'?'€':ccy==='PLN'?'zł':'')+(b>=100?b.toFixed(0):b.toFixed(1))+'B';},
   px:(v,ccy)=>v==null?'–':(ccy==='KRW'||!ccy?Number(v).toLocaleString('ko-KR',{maximumFractionDigits:0}):Number(v).toLocaleString('en-US',{maximumFractionDigits:v<20?2:v<1000?1:0})),
@@ -479,7 +481,7 @@ function renderInd(k){
   ].map(([l,v,d,c])=>`<div class="tile"><div class="l">${l}</div><div class="v">${v}</div><div class="d ${c}">${d}</div></div>`).join('');
   // chart: 24 months, total vs mobile
   const pts=P.slice(-24), mpts=mob?mob.points.filter(p=>pts.some(q=>q[0]===p[0])):[];
-  const W=720,H=220,L=48,R=12,T=12,B=28; const xs=pts.map((p,i)=>L+i*(W-L-R)/(pts.length-1));
+  const W=720,H=220,L=48,R=30,T=14,B=28; const xs=pts.map((p,i)=>L+i*(W-L-R)/(pts.length-1));
   const vmax=Math.max(...pts.map(p=>toJo(p[1])),...mpts.map(p=>toJo(p[1])))*1.08, vmin=0;
   const Y=v=>T+(1-(v-vmin)/(vmax-vmin))*(H-T-B);
   const ticks=[];const step=vmax>20?5:vmax>8?2:1;for(let v=0;v<=vmax;v+=step)ticks.push(v);
