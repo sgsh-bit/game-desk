@@ -242,12 +242,27 @@ tr.sel td{background:var(--accent-soft)}
 .est-grid input{width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--panel);font-family:var(--mono);font-size:12.5px;text-align:right}
 .est-grid .h{font-size:11px;color:var(--muted);text-align:right;letter-spacing:.03em}
 .est-grid .p{font-family:var(--mono);font-size:12px;white-space:nowrap}
+
+.search{border:1px solid var(--line);border-radius:6px;padding:6px 10px;background:var(--panel);min-width:220px;font-size:13px}
+.search:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.mh{font-size:11px;color:var(--muted);text-align:center;padding:2px 0;font-family:var(--mono)}
+.mc{min-height:74px;border:1px solid var(--line2);border-radius:6px;padding:4px 5px;min-width:0;cursor:pointer;background:var(--panel)}
+.mc.empty{background:transparent;border-color:transparent;cursor:default}
+.mc.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.mc:hover:not(.empty){background:var(--line2)}
+.mn{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.me{font-size:10.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:7px;position:relative}
+.me::before{content:"";position:absolute;left:0;top:4px;width:4px;height:4px;border-radius:1px;background:var(--c)}
+tr.sel td{background:var(--accent-soft)}
+@media (max-width:640px){.mc{min-height:48px}.me{display:none}.mc .mn::after{content:""}.mc:has(.me) .mn{font-weight:700;color:var(--accent)}}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:grid;gap:6px;max-width:80ch}
 </style>
 </head>
 <body>
 <header class="top"><div class="in">
   <div class="brand"><h1>게임 섹터 데스크</h1><span class="clock" id="clock"></span></div>
+  <button class="icon" id="theme-btn" title="라이트/다크 전환" aria-label="테마 전환" style="margin-left:6px;font-size:15px">◐</button>
   <nav class="tabs" role="tablist" aria-label="섹션">
     <button role="tab" data-tab="brief" aria-selected="true">브리핑</button>
     <button role="tab" data-tab="co" aria-selected="false">종목</button>
@@ -320,6 +335,7 @@ tr.sel td{background:var(--accent-soft)}
   <div class="sec-head"><h2>이벤트 캘린더</h2><span class="sub">신작 출시 · 실적 발표 · 행사 · 규제 · e스포츠</span></div>
   <div class="week-strip" id="week-strip"></div>
   <div class="chips" id="cal-chips" style="margin-bottom:12px"></div>
+  <div class="panel" id="cal-month" style="margin-bottom:14px;padding:12px"></div>
   <div class="panel"><div id="cal-list"><div class="empty">일정을 불러오는 중…</div></div></div>
   <p class="help">"예상"으로 표시된 실적발표일은 전년 발표 패턴 기반 추정치이며 확정 공시 시 갱신됩니다.</p>
   <div class="panel" style="padding:12px;margin-top:12px"><b style="font-size:13px">캘린더 구독</b><div class="help" style="margin-top:4px">아래 주소를 Outlook·Google 캘린더의 "URL로 구독"에 넣으면 일정이 자동으로 동기화됩니다 (6시간 주기).</div>
@@ -372,6 +388,7 @@ tr.sel td{background:var(--accent-soft)}
 
 <section class="view" id="view-dart" hidden>
   <div class="sec-head"><h2>DART 공시</h2><span class="sub">커버리지 종목 전자공시 · 매시 갱신</span><span class="spacer"></span><span class="stamp" id="dart-stamp"></span></div>
+  <div class="wl-tools"><input id="dart-q" class="search" placeholder="공시 제목 검색…" aria-label="공시 검색"></div>
   <div class="chips" id="dart-chips" style="margin-bottom:8px"></div>
   <div class="chips" id="dart-co" style="margin-bottom:12px"></div>
   <div class="panel"><div class="tablewrap"><table id="dart-table">
@@ -399,7 +416,7 @@ tr.sel td{background:var(--accent-soft)}
 
 <section class="view" id="view-news" hidden>
   <div class="sec-head"><h2>뉴스</h2><span class="sub">커버리지 종목별 최신 헤드라인 · 3시간마다 갱신</span><span class="spacer"></span><span class="stamp" id="news-stamp"></span></div>
-  <div class="chips" id="news-chips" style="margin-bottom:12px"></div>
+  <div class="wl-tools"><input id="news-q" class="search" placeholder="헤드라인 검색…" aria-label="뉴스 검색"><div class="chips" id="news-chips"></div></div>
   <div class="news-grid" id="news-grid"></div>
 </section>
 
@@ -450,6 +467,8 @@ let mine=[]; try{mine=JSON.parse(localStorage.getItem('myWatch')||'[]');}catch(e
 function saveMine(){try{localStorage.setItem('myWatch',JSON.stringify(mine));}catch(e){}}
 function allWatch(){return [...watch,...mine];}
 
+(function(){const root=document.documentElement;let t=null;try{t=localStorage.getItem('theme');}catch(e){}if(t)root.dataset.theme=t;
+  $('#theme-btn').addEventListener('click',()=>{const dark=root.dataset.theme==='dark'||(!root.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);const n=dark?'light':'dark';root.dataset.theme=n;try{localStorage.setItem('theme',n);}catch(e){}});})();
 function showTab(t){$$('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));$$('section.view').forEach(s=>s.hidden=(s.id!=='view-'+t));try{localStorage.setItem('tab',t)}catch(e){}}
 $$('.tabs [role=tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 (function(){let t='brief';try{t=localStorage.getItem('tab')||t}catch(e){}if(/^#(brief|co|watch|rank|cal|flow|val|earn|dart|ind|ccu|news|rep)$/.test(location.hash))t=location.hash.slice(1);showTab(t);})();
@@ -526,7 +545,20 @@ function renderWeek(){
   $('#week-strip').innerHTML=days.map(d=>{const evs=events.filter(e=>e.date<=d&&(e.end||e.date)>=d).slice(0,4);
     return `<div class="day ${d===t?'today':''}"><div class="d"><b>${d.slice(5).replace('-','/')}</b><span>${dowOf(d)}</span></div>${evs.map(e=>`<div class="ev" style="--c:${CATS[e.cat]?.c||'#888'}" title="${esc(e.title)}">${esc(e.title)}</div>`).join('')}${evs.length?'':'<div class="ev" style="--c:transparent;color:var(--line)">—</div>'}</div>`;}).join('');
 }
+let calMonth=null;
+function renderMonth(){
+  const t=todayKST(); if(!calMonth){calMonth=t.slice(0,7);if(!events.some(e=>e.date.slice(0,7)===calMonth||(e.end||'').slice(0,7)===calMonth)){const n=addDays(t.slice(0,7)+'-28',7).slice(0,7);if(events.some(e=>e.date.slice(0,7)===n))calMonth=n;}}
+  const [y,m]=calMonth.split('-').map(Number); const first=new Date(Date.UTC(y,m-1,1)); const startDow=first.getUTCDay(); const days=new Date(Date.UTC(y,m,0)).getUTCDate();
+  const cells=[]; for(let i=0;i<startDow;i++)cells.push(null); for(let d=1;d<=days;d++)cells.push(`${calMonth}-${String(d).padStart(2,'0')}`); while(cells.length%7)cells.push(null);
+  const evs=events.filter(e=>calFilter==='all'||e.cat===calFilter);
+  const prev=()=>{const d=new Date(Date.UTC(y,m-2,1));return d.toISOString().slice(0,7);},next=()=>{const d=new Date(Date.UTC(y,m,1));return d.toISOString().slice(0,7);};
+  $('#cal-month').innerHTML=`<div class="sec-head" style="margin-bottom:8px"><button class="btn small" data-m="${prev()}">‹</button><h3 style="margin:0 8px;font-size:14px">${y}년 ${m}월</h3><button class="btn small" data-m="${next()}">›</button><span class="spacer"></span><span class="pub">셀을 누르면 해당 날짜 일정으로 이동</span></div>
+    <div class="mgrid">${DOW.map(d=>`<div class="mh">${d}</div>`).join('')}${cells.map(d=>{if(!d)return '<div class="mc empty"></div>';const list=evs.filter(e=>e.date<=d&&(e.end||e.date)>=d);return `<div class="mc ${d===t?'today':''}" data-d="${d}"><div class="mn">${+d.slice(8)}</div>${list.slice(0,3).map(e=>`<div class="me" style="--c:${CATS[e.cat]?.c||'#888'}" title="${esc(e.title)}">${esc(e.title)}</div>`).join('')}${list.length>3?`<div class="pub" style="font-size:10px">+${list.length-3}</div>`:''}</div>`;}).join('')}</div>`;
+  $$('#cal-month [data-m]').forEach(b=>b.addEventListener('click',()=>{calMonth=b.dataset.m;renderMonth();}));
+  $$('#cal-month .mc[data-d]').forEach(c=>c.addEventListener('click',()=>{const row=$(`#cal-list tr[data-date="${c.dataset.d}"]`);if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.classList.add('sel');setTimeout(()=>row.classList.remove('sel'),1600);}}));
+}
 function renderCal(){
+  renderMonth();
   const t=todayKST();
   const list=events.filter(e=>calFilter==='all'||e.cat===calFilter).filter(e=>(e.end||e.date)>=addDays(t,-7)).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title));
   if(!list.length){$('#cal-list').innerHTML='<div class="empty">표시할 일정이 없습니다.</div>';return;}
@@ -534,7 +566,7 @@ function renderCal(){
   $('#cal-list').innerHTML=Object.entries(byMonth).map(([m,evs])=>`<div class="month"><h3 style="padding:12px 12px 0">${m.replace('-','.')}</h3><div class="tablewrap"><table>
     <thead><tr><th>날짜</th><th>D-day</th><th>분류</th><th>일정</th><th>회사/주최</th><th>메모</th><th>확정</th></tr></thead><tbody>
     ${evs.map(e=>{const dd=ddays(e.date);const past=(e.end||e.date)<t;const ddTxt=dd===0?'D-DAY':dd>0?`D-${dd}`:`D+${-dd}`;
-      return `<tr class="${past?'past':''}"><td class="date">${e.date.slice(5).replace('-','/')}<span class="dow">${dowOf(e.date)}</span>${e.end&&e.end!==e.date?`<br>~${e.end.slice(5).replace('-','/')}`:''}</td>
+      return `<tr class="${past?'past':''}" data-date="${e.date}"><td class="date">${e.date.slice(5).replace('-','/')}<span class="dow">${dowOf(e.date)}</span>${e.end&&e.end!==e.date?`<br>~${e.end.slice(5).replace('-','/')}`:''}</td>
       <td><span class="dday ${dd>=0&&dd<=7?'soon':''}">${ddTxt}</span></td><td><span class="cat" style="--c:${CATS[e.cat]?.c||'#888'}">${CATS[e.cat]?.l||e.cat}</span></td>
       <td class="name">${esc(e.title)}</td><td class="pub">${esc(e.org||'')}</td><td class="note">${esc(e.note||'')}</td><td><span class="conf ${e.conf==='예상'?'est':''}">${esc(e.conf||'')}</span></td></tr>`;}).join('')}
     </tbody></table></div></div>`).join('');
@@ -698,10 +730,11 @@ function renderNews(){
   const opts=[['all','전체'],['sector','섹터'],...Object.keys(newsData.companies).map(c=>[c,names[c]||c])];
   $('#news-chips').innerHTML=opts.map(([k,l])=>`<button class="chip" data-n="${k}" aria-pressed="${newsFilter===k}">${l}</button>`).join('');
   $$('#news-chips .chip').forEach(b=>b.addEventListener('click',()=>{newsFilter=b.dataset.n;renderNews();}));
+  const q=($('#news-q').value||'').trim().toLowerCase(); const filt=items=>q?items.filter(i=>i.title.toLowerCase().includes(q)):items;
   const card=(title,items,sub)=>`<div class="news-card"><h3>${esc(title)}<span>${sub||''}</span></h3><ul>${items.map(i=>`<li><a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.title)}</a><span class="m">${esc(i.src)} · ${ago(i.ts)}</span></li>`).join('')||'<li class="pub">기사 없음</li>'}</ul></div>`;
   const cards=[];
-  if(newsFilter==='all'||newsFilter==='sector')cards.push(card('섹터 이슈',newsData.sector.slice(0,newsFilter==='sector'?30:8),'게임주·플랫폼 규제·앱마켓'));
-  for(const [c,items] of Object.entries(newsData.companies)){if(newsFilter==='all'||newsFilter===c)cards.push(card(names[c]||c,items.slice(0,newsFilter===c?20:5),c));}
+  if(newsFilter==='all'||newsFilter==='sector')cards.push(card('섹터 이슈',filt(newsData.sector).slice(0,newsFilter==='sector'||q?30:8),'게임주·플랫폼 규제·앱마켓'));
+  for(const [c,items] of Object.entries(newsData.companies)){const f=filt(items);if((newsFilter==='all'||newsFilter===c)&&(!q||f.length))cards.push(card(names[c]||c,f.slice(0,newsFilter===c||q?20:5),c));}
   grid.innerHTML=cards.join('');
 }
 /* ---------- 리포트 ---------- */
@@ -806,6 +839,8 @@ $('#earn-copy').addEventListener('click',()=>{
 /* ---------- DART 공시 ---------- */
 let dart=null,dartTag='all',dartCo='all';
 const TAGC={실적:'#C8102E',자사주:'#0F7B5F',밸류업:'#0F7B5F',배당:'#0F7B5F',자본:'#8A5A00','M&A':'#5B4BC4',지분:'#1A5FD6',계약:'#0F7B5F',투자:'#8A5A00',이슈:'#C8102E',리스크:'#C8102E',IR:'#6B7280',주총:'#6B7280',정기:'#6B7280',기타:'#9AA3B2'};
+$('#news-q')?.addEventListener('input',()=>{clearTimeout(renderNews._t);renderNews._t=setTimeout(renderNews,200);});
+$('#dart-q')?.addEventListener('input',()=>{clearTimeout(renderDart._t);renderDart._t=setTimeout(renderDart,200);});
 function renderDart(){
   const body=$('#dart-body'); if(!dart){body.innerHTML='<tr><td colspan="5" class="empty">DART 공시가 아직 연결되지 않았습니다. OpenDART 인증키를 저장소 Secret(OPENDART_API_KEY)에 등록하면 매시 자동 수집됩니다.</td></tr>';return;}
   $('#dart-stamp').textContent='수집 '+fmtStamp(dart.generatedAt);
@@ -815,7 +850,8 @@ function renderDart(){
   $('#dart-co').innerHTML=cos.map(c=>`<button class="chip" data-c="${esc(c)}" aria-pressed="${dartCo===c}">${c==='all'?'전체 종목':esc(c)}</button>`).join('');
   $$('#dart-chips .chip').forEach(b=>b.addEventListener('click',()=>{dartTag=b.dataset.t;renderDart();}));
   $$('#dart-co .chip').forEach(b=>b.addEventListener('click',()=>{dartCo=b.dataset.c;renderDart();}));
-  const list=dart.items.filter(x=>(dartTag==='all'||x.tag===dartTag)&&(dartCo==='all'||x.name===dartCo)).slice(0,150);
+  const dq=($('#dart-q').value||'').trim().toLowerCase();
+  const list=dart.items.filter(x=>(dartTag==='all'||x.tag===dartTag)&&(dartCo==='all'||x.name===dartCo)&&(!dq||x.title.toLowerCase().includes(dq))).slice(0,150);
   body.innerHTML=list.map(x=>`<tr><td class="date">${x.date.slice(5).replace('-','/')}<span class="dow">${dowOf(x.date)}</span></td><td class="name">${esc(x.name)}</td><td><span class="tagc" style="--c:${TAGC[x.tag]||'#9AA3B2'}">${esc(x.tag)}</span></td><td><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${esc(x.rcp)}" target="_blank" rel="noopener">${esc(x.title)}</a>${x.rm?` <span class="stamp">${esc(x.rm)}</span>`:''}</td><td class="pub">${esc(x.filer)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">해당 공시 없음</td></tr>';
 }
 (async()=>{
@@ -854,6 +890,11 @@ function renderBrief(){
       ${top.map(x=>`<li><span class="k">외인 5일 매수</span><span>${esc(x.r.name)}</span><span class="v pos">${fmt.signed(x.f5)}억</span></li>`).join('')}
       ${bot.map(x=>`<li><span class="k">외인 5일 매도</span><span>${esc(x.r.name)}</span><span class="v neg">${fmt.signed(x.f5)}억</span></li>`).join('')}</ul></div>`);
     briefLines.push(`■ 수급(${asOf.slice(5).replace('-','/')}) 외인 ${fmt.signed(tf)}억 | 기관 ${fmt.signed(ti)}억`,`・외인 5일 매수 → ${top.map(x=>`${x.r.name} ${fmt.signed(x.f5)}`).join(' | ')}`,`・외인 5일 매도 → ${bot.map(x=>`${x.r.name} ${fmt.signed(x.f5)}`).join(' | ')}`);}
+  // 1b 주간 수익률
+  if(market){const rows=market.kr.filter(r=>r.ret?.w1!=null).sort((a,b)=>b.ret.w1-a.ret.w1);
+    if(rows.length){const top=rows.slice(0,4),bot=rows.slice(-4).reverse();
+      cards.push(`<div class="bcard"><h3>주간 수익률 (1W) <a href="#val" data-go="val">밸류에이션</a></h3><ul>${top.map(r=>`<li><span class="k">상위</span><span><span class="wl-name" data-cocard="${r.code}">${esc(r.name)}</span></span><span class="v ${cls(r.ret.w1)}">${fmt.pct(r.ret.w1,1)}</span></li>`).join('')}${bot.map(r=>`<li><span class="k">하위</span><span><span class="wl-name" data-cocard="${r.code}">${esc(r.name)}</span></span><span class="v ${cls(r.ret.w1)}">${fmt.pct(r.ret.w1,1)}</span></li>`).join('')}</ul></div>`);
+      briefLines.push('■ 주간 수익률',`・상위 → ${top.map(r=>`${r.name} ${fmt.pct(r.ret.w1,1)}`).join(' | ')}`,`・하위 → ${bot.map(r=>`${r.name} ${fmt.pct(r.ret.w1,1)}`).join(' | ')}`);}}
   // 2 순위 변동
   const mv=movers();
   cards.push(`<div class="bcard"><h3>매출순위 변동 (국내사·워치리스트) <a href="#rank" data-go="rank">자세히</a></h3>${mv.length?`<ul>${mv.map(m=>`<li><span class="k">${esc(m.store.replace('App Store','Apple').replace('Google Play','Google'))}</span><span>${esc(m.it.n)}</span><span class="v">${m.it.r}위 ${m.kind==='new'?'<span class="delta new">NEW</span>':deltaHTML(m.it.d,true)}</span></li>`).join('')}</ul>`:'<div class="empty">전일 대비 5계단 이상 변동 없음</div>'}</div>`);
