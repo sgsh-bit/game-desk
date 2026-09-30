@@ -25,6 +25,10 @@ jobs:
       - run: npm ci
       - name: Collect market data
         run: node scripts/collect-market.mjs
+      - name: FnGuide quarterly backfill
+        env:
+          DEBUG: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
+        run: node scripts/collect-fnguide.mjs || true
       - name: Earnings consensus
         env:
           DEBUG: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
