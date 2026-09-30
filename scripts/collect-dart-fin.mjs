@@ -20,7 +20,7 @@ let corp = fs.existsSync(CC) ? JSON.parse(fs.readFileSync(CC, 'utf8')) : {};
 if (KR.some(k => !corp[k.code])) {
   const tmp = path.join(ROOT, 'data', 'debug'); fs.mkdirSync(tmp, { recursive: true });
   const zip = path.join(tmp, 'corpCode.zip');
-  const r = await fetch(`https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${KEY}`);
+  const r = await fetch(`https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${KEY}`, { signal: AbortSignal.timeout(60000) });
   fs.writeFileSync(zip, Buffer.from(await r.arrayBuffer()));
   execSync(`cd "${tmp}" && unzip -o -q corpCode.zip`);
   const xml = fs.readFileSync(path.join(tmp, 'CORPCODE.xml'), 'utf8');
@@ -36,7 +36,7 @@ if (KR.some(k => !corp[k.code])) {
 const RE = { rev: /^(매출액|영업수익|수익\(매출액\)|매출)$/, op: /^영업이익(\(손실\))?$/, np: /^당기순이익(\(손실\))?$|^분기순이익(\(손실\))?$|^반기순이익(\(손실\))?$/, npc: /지배기업(의)?\s*소유주(지분)?|지배주주/ };
 async function fin(corpCode, year, reprt) {
   const u = `https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json?crtfc_key=${KEY}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=${reprt}&fs_div=CFS`;
-  let j; try { const r = await fetch(u); const txt = await r.text(); try { j = JSON.parse(txt); } catch { j = { status: 'ERR', message: `HTTP ${r.status} non-JSON: ${txt.slice(0, 80)}` }; } } catch (e) { j = { status: 'ERR', message: e.message }; }
+  let j; try { const r = await fetch(u, { signal: AbortSignal.timeout(20000) }); const txt = await r.text(); try { j = JSON.parse(txt); } catch { j = { status: 'ERR', message: `HTTP ${r.status} non-JSON: ${txt.slice(0, 80)}` }; } } catch (e) { j = { status: 'ERR', message: e.message }; }
   if (j.status !== '000') { if (process.env.DEBUG) { fs.mkdirSync(path.join(ROOT, 'data', 'debug'), { recursive: true }); fs.appendFileSync(path.join(ROOT, 'data', 'debug', 'dartfin.txt'), `${corpCode} ${year} ${reprt}: status ${j.status} ${j.message}\n`); } return null; }
   let rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div));
   if (!rows.some(r => RE.rev.test(String(r.account_nm).replace(/\s/g, '')))) rows = (j.list || []).filter(x => /^(IS|CIS)$/.test(x.sj_div) || /매출|영업이익|순이익/.test(x.account_nm));

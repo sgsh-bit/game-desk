@@ -38,7 +38,7 @@ const found = [];
 for (const cls of ['Y', 'K']) {
   for (let page = 1; page <= 60; page++) {
     const u = `https://opendart.fss.or.kr/api/list.json?crtfc_key=${KEY}&bgn_de=${bgn}&end_de=${end}&corp_cls=${cls}&page_no=${page}&page_count=100`;
-    const r = await fetch(u); const j = await r.json().catch(() => ({}));
+    const r = await fetch(u, { signal: AbortSignal.timeout(20000) }).catch(() => null); const j = r ? await r.json().catch(() => ({})) : {};
     if (j.status !== '000') { if (j.status !== '013') console.log(`dart ${cls} p${page}: ${j.status} ${j.message}`); break; }
     for (const x of j.list || []) if (codes.has(x.stock_code)) found.push({ code: x.stock_code, name: codes.get(x.stock_code), title: x.report_nm.replace(/\s+/g, ' ').trim(), filer: x.flr_nm, date: `${x.rcept_dt.slice(0, 4)}-${x.rcept_dt.slice(4, 6)}-${x.rcept_dt.slice(6)}`, rcp: x.rcept_no, rm: x.rm || '', tag: tag(x.report_nm) });
     if (page >= (j.total_page || 1)) break;
