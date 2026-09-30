@@ -256,6 +256,8 @@ tr.sel td{background:var(--accent-soft)}
 .me::before{content:"";position:absolute;left:0;top:4px;width:4px;height:4px;border-radius:1px;background:var(--c)}
 tr.sel td{background:var(--accent-soft)}
 @media (max-width:640px){.mc{min-height:48px}.me{display:none}.mc .mn::after{content:""}.mc:has(.me) .mn{font-weight:700;color:var(--accent)}}
+th{cursor:pointer;user-select:none}th.sorted::after{content:" ▾";color:var(--accent)}th[data-dir="asc"].sorted::after{content:" ▴"}
+@media (max-width:640px){.chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.chips .chip{flex:0 0 auto}}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:grid;gap:6px;max-width:80ch}
 </style>
 </head>
@@ -361,6 +363,9 @@ tr.sel td{background:var(--accent-soft)}
     <thead><tr><th>종목</th><th class="num">주가</th><th class="num">1D</th><th class="num">1M</th><th class="num">3M</th><th class="num">YTD</th><th class="num">시총</th>
       <th class="num">PER(T)</th><th class="num">PER(F)</th><th class="num">PBR</th><th class="num">EV/EBITDA</th><th class="num">목표가</th><th class="num">1M 변화</th><th class="num">상승여력</th><th>투자의견</th><th>60일</th></tr></thead>
     <tbody id="val-body"><tr><td colspan="16" class="empty">데이터를 불러오는 중…</td></tr></tbody></table></div></div>
+  <div class="sec-head" style="margin-top:22px"><h2 style="font-size:16px">PER 밴드</h2><span class="sub">3년 주간 주가 vs Trailing PER 밴드 · 국내 커버리지</span></div>
+  <div class="chips" id="band-chips" style="margin-bottom:12px"></div>
+  <div class="panel" style="padding:12px" id="band-box"><div class="empty">불러오는 중…</div></div>
   <p class="help">1M 변화 = 목표주가 컨센서스의 30일 전 대비 변화(일별 스냅샷 축적 후 표시). 국내 PER(T)·PBR은 최근 결산 기준(네이버증권), PER(F)는 국내 = 당해연도 추정 PER(FnGuide 컨센서스), 해외 = 12M forward(LSEG). 투자의견 척도 1(강력매수)~5(매도), 괄호는 커버 애널리스트 수. 시총: 원화 조원 / 해외는 현지통화 십억. 소형주는 컨센서스가 없을 수 있음(–).</p>
 </section>
 
@@ -1032,6 +1037,58 @@ function fnTargetChart(code){
 function fnEpsRevision(code){const t=fnData?.target?.[code];if(!t)return null;const ds=Object.keys(t).sort();if(ds.length<2)return null;const a=t[ds[0]].eps1,b=t[ds[ds.length-1]].eps1;return a&&b?{pct:(b/a-1)*100,from:ds[0],to:ds[ds.length-1]}:null;}
 (async()=>{try{siteCfg=await getJSON('data/config.json');}catch(e){} try{fnData=await getJSON('data/fn.json');}catch(e){} if(fnOn()){renderFin();if(coCode)renderCo();}})();
 
+
+/* ================= 밸류에이션 밴드 ================= */
+let priceHist=null, quarterArch=null, bandCode=null, bandMode='per';
+function ttmSeries(code){ // → [{key:'202406', d:'2024-06-30', npc, rev}] TTM sums by quarter end
+  const q=quarterArch?.[code]; if(!q)return [];
+  const keys=Object.keys(q).filter(k=>/^\d{6}$/.test(k)).sort(); const out=[];
+  for(let i=3;i<keys.length;i++){const w=keys.slice(i-3,i+1);const v=w.map(k=>q[k].npc??q[k].np);if(v.some(x=>x==null))continue;const k=keys[i];const m=+k.slice(4);const d=new Date(Date.UTC(+k.slice(0,4),m,0)).toISOString().slice(0,10);out.push({key:k,d,ttmNp:v.reduce((a,b)=>a+b,0),ttmRev:w.reduce((a,k2)=>a+(q[k2].rev||0),0)});}
+  return out;
+}
+function bandChart(r,{w=1100,h=320}={}){
+  const px=priceHist?.[r.code]; if(!px||px.length<20)return '<div class="empty">주가 히스토리가 아직 수집되지 않았습니다 (다음 수집 후 표시).</div>';
+  const shares=r.mcap&&r.price?r.mcap/r.price:null; if(!shares)return '<div class="empty">시가총액 정보 없음</div>';
+  const ttm=ttmSeries(r.code); if(ttm.length<2)return '<div class="empty">TTM 순이익 계산에 필요한 분기 데이터가 부족합니다.</div>';
+  // EPS at each price date: latest TTM whose quarter-end ≤ date (published ~45일 후 가정)
+  const epsAt=d=>{let best=null;for(const t of ttm){const pub=addDays(t.d,45);if(pub<=d)best=t;}return best?best.ttmNp*1e8/shares:null;};
+  const pts=px.map(([d,p])=>({d,p,eps:epsAt(d)})).filter(x=>x.eps!=null);
+  if(pts.length<10)return '<div class="empty">밴드 계산 구간이 짧습니다.</div>';
+  const pers=pts.filter(x=>x.eps>0).map(x=>x.p/x.eps); const loss=pers.length<pts.length*0.5;
+  if(loss)return `<div class="empty">적자 구간이 길어 PER 밴드가 의미 없습니다 (TTM EPS ≤ 0). 대신 PBR·PSR 참고.</div>`;
+  const sorted=[...pers].sort((a,b)=>a-b); const q=p=>sorted[Math.min(sorted.length-1,Math.floor(p*(sorted.length-1)))];
+  const mults=[q(0.05),q(0.25),q(0.5),q(0.75),q(0.95)].map(v=>Math.round(v*10)/10);
+  const L=56,R=70,T=14,B=26; const X=i=>L+i*(w-L-R)/(pts.length-1);
+  const allV=[...pts.map(x=>x.p),...pts.flatMap(x=>mults.map(m=>x.eps*m))]; let lo=Math.min(...allV),hi=Math.max(...allV); const pad=(hi-lo)*0.06;lo=Math.max(0,lo-pad);hi+=pad;
+  const Y=v=>T+(1-(v-lo)/(hi-lo))*(h-T-B);
+  const bands=mults.map((m,i)=>{const d=pts.map((x,j)=>`${j?'L':'M'}${X(j).toFixed(1)},${Y(x.eps*m).toFixed(1)}`).join('');const last=pts[pts.length-1];return `<path d="${d}" fill="none" stroke="var(--muted)" stroke-width="1" stroke-dasharray="${i===2?'':'3 3'}" opacity=".7"/><text x="${w-R+6}" y="${Y(last.eps*m)+4}" style="fill:var(--muted)">${m}x</text>`;}).join('');
+  const fill=(()=>{const a=pts.map((x,j)=>`${X(j).toFixed(1)},${Y(x.eps*mults[1]).toFixed(1)}`).join(' L');const b=[...pts].reverse().map((x,j)=>`${X(pts.length-1-j).toFixed(1)},${Y(x.eps*mults[3]).toFixed(1)}`).join(' L');return `<path d="M${a} L${b} Z" fill="var(--accent)" opacity=".07"/>`;})();
+  const line=`<polyline points="${pts.map((x,j)=>`${X(j).toFixed(1)},${Y(x.p).toFixed(1)}`).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`;
+  const last=pts[pts.length-1]; const curPer=last.p/last.eps; const pct=sorted.filter(v=>v<=curPer).length/sorted.length*100;
+  const ticks=[lo+pad,(lo+hi)/2,hi-pad].map(v=>`<line class="grid" x1="${L}" x2="${w-R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${fmt.n(v)}</text>`).join('');
+  const xl=pts.map((x,j)=>j%Math.ceil(pts.length/8)===0||j===pts.length-1?`<text x="${X(j)}" y="${h-6}" text-anchor="middle">${x.d.slice(2,7).replace('-','.')}</text>`:'').join('');
+  return `<div class="kv" style="margin-bottom:8px"><div><span class="l">현재 Trailing PER</span><span class="v">${curPer.toFixed(1)}x</span></div><div><span class="l">3년 분포 내 위치</span><span class="v ${pct>75?'pos':pct<25?'neg':''}">${pct.toFixed(0)}백분위</span></div><div><span class="l">밴드 (5/25/50/75/95%)</span><span class="v" style="font-size:12px">${mults.join(' / ')}x</span></div><div><span class="l">TTM EPS</span><span class="v">${fmt.n(last.eps)}원</span></div><div><span class="l">추정PER(당해)</span><span class="v">${r.cnsPer!=null?r.cnsPer.toFixed(1)+'x':'–'}</span></div></div>
+  <div class="legend"><span><i style="background:var(--accent)"></i>주가(주간)</span><span><i style="background:var(--muted)"></i>Trailing PER 밴드 (TTM 지배순이익 × 배수)</span><span class="pub">회색 음영 = 25~75% 구간</span></div><div class="chart"><svg viewBox="0 0 ${w} ${h}">${ticks}${fill}${bands}${line}<circle cx="${X(pts.length-1)}" cy="${Y(last.p)}" r="4" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>${xl}</svg></div>
+  <p class="help" style="margin-top:6px">밴드 배수는 최근 3년 주간 Trailing PER 분포의 백분위. EPS는 분기 지배주주순이익 4개 합(발표 시차 45일 가정) ÷ 현재 유통주식수(시총÷주가) — 주식수 변동·일회성 손익은 반영되지 않은 근사치입니다.</p>`;
+}
+function renderBand(){
+  const box=$('#band-box'); if(!box||!market)return;
+  const list=market.kr; if(!bandCode)bandCode=list[0].code; const r=list.find(x=>x.code===bandCode)||list[0];
+  $('#band-chips').innerHTML=list.map(x=>`<button class="chip" data-b="${x.code}" aria-pressed="${bandCode===x.code}">${esc(x.name)}</button>`).join('');
+  $$('#band-chips .chip').forEach(b=>b.addEventListener('click',()=>{bandCode=b.dataset.b;renderBand();}));
+  box.innerHTML=`<h3 style="margin:0 0 6px;font-size:14px">${esc(r.name)} · PER 밴드 (3년, 주간)</h3>`+bandChart(r);
+}
+(async()=>{try{priceHist=await getJSON('data/history/prices.json');}catch(e){} try{quarterArch=await getJSON('data/history/quarters.json');}catch(e){} const t=setInterval(()=>{if(market){clearInterval(t);renderBand();if(coCode)renderCo();}},300);setTimeout(()=>clearInterval(t),8000);})();
+
+/* ================= 표 정렬 (헤더 클릭) ================= */
+function parseCell(td){const t=td.textContent.replace(/[,\s%억조원x배명위▲▼+]/g,'').replace(/^[–-]$/,'');const n=parseFloat(t);return isNaN(n)?td.textContent.trim():n;}
+document.addEventListener('click',e=>{const th=e.target.closest('table thead th');if(!th||th.colSpan>1)return;const table=th.closest('table');if(!table.id||['fin-table','co-fin'].includes(table.id))return;
+  const tbody=table.tBodies[0];if(!tbody)return;const idx=[...th.parentNode.children].indexOf(th);const rows=[...tbody.rows].filter(r=>r.cells.length>idx&&!r.querySelector('.empty'));if(rows.length<2)return;
+  const dir=th.dataset.dir==='desc'?'asc':'desc';table.querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.classList.remove('sorted');});th.dataset.dir=dir;th.classList.add('sorted');
+  const fixed=rows.filter(r=>/중간값/.test(r.cells[0].textContent));const sortable=rows.filter(r=>!fixed.includes(r));
+  sortable.sort((a,b)=>{const va=parseCell(a.cells[idx]),vb=parseCell(b.cells[idx]);const na=typeof va==='number',nb=typeof vb==='number';if(na&&nb)return dir==='desc'?vb-va:va-vb;if(na)return -1;if(nb)return 1;return dir==='desc'?String(vb).localeCompare(String(va)):String(va).localeCompare(String(vb));});
+  [...sortable,...fixed].forEach(r=>tbody.appendChild(r));});
+
 /* ================= 종목 카드 ================= */
 let coCode=null;
 function priceChart(sp,{w=700,h=200}={}){
@@ -1057,9 +1114,9 @@ function flowChart(r,{w=700,h=170}={}){
 }
 function renderCo(){
   if(!market){$('#co-card').innerHTML='<div class="empty">시장 데이터를 불러오는 중…</div>';return;}
-  const list=market.kr; if(!coCode)coCode=list[0].code;
+  const list=market.kr; if(!coCode){try{coCode=localStorage.getItem('coCode');}catch(e){} if(!coCode||!list.some(x=>x.code===coCode))coCode=list[0].code;}
   $('#co-chips').innerHTML=list.map(r=>`<button class="chip" data-co="${r.code}" aria-pressed="${coCode===r.code}">${esc(r.name)}</button>`).join('');
-  $$('#co-chips .chip').forEach(b=>b.addEventListener('click',()=>{coCode=b.dataset.co;renderCo();}));
+  $$('#co-chips .chip').forEach(b=>b.addEventListener('click',()=>{coCode=b.dataset.co;try{localStorage.setItem('coCode',coCode);}catch(e){}renderCo();}));
   const r=list.find(x=>x.code===coCode); if(!r)return;
   const e=earn?.companies?.[r.code]; const news=(newsData?.companies?.[r.code]||[]).slice(0,6); const filings=(dart?.items||[]).filter(x=>x.code===r.code).slice(0,6);
   const reps=(repData?.items||[]).filter(x=>x.code===r.code||(x.subject&&x.subject.includes(r.name))).slice(0,5);
@@ -1086,6 +1143,7 @@ function renderCo(){
   <div class="co-grid">
     <div class="panel span8"><h3>주가 (최근 60거래일)</h3>${priceChart(r.spark)}</div>
     <div class="panel span4"><h3>밸류에이션 · 컨센서스 <a href="#val" data-go="val">전체 비교</a></h3><div class="kv">${kv.map(([l,v])=>`<div><span class="l">${l}</span><span class="v">${v}</span></div>`).join('')}</div></div>
+    <div class="panel span12"><h3>PER 밴드 (3년, 주간) <a href="#val" data-go="val">밴드 상세</a></h3>${priceHist?bandChart(r,{w:1100,h:280}):'<div class="empty">주가 히스토리 수집 대기 중</div>'}</div>
     <div class="panel span8"><h3>투자자별 순매수 (20거래일, 억원) <a href="#flow" data-go="flow">수급 보드</a></h3>${flowChart(r)}</div>
     <div class="panel span4"><h3>관련 게임 순위 <a href="#watch" data-go="watch">워치리스트</a></h3>${games.length?`<ul class="mini-list">${games.map(w=>{const hits=STORES.map(s=>{const doc=charts[s.id];const h=doc?.items?.find(it=>matchItem(it,w.keys));return h?`${s.label.replace('App Store','A').replace('Google Play','G').replace('Steam','S').replace(' 한국','KR').replace(' 일본','JP').replace(' 미국','US').replace(' 중국','CN').replace(' 글로벌','GL')} ${h.r}위`:null;}).filter(Boolean);return `<li><span class="k">${esc(w.name)}</span><span>${hits.join(' · ')||'<span class="pub">Top50 밖</span>'}</span></li>`;}).join('')}</ul>`:'<div class="empty">워치리스트에 등록된 타이틀 없음</div>'}</div>
     <div class="panel span12"><h3>실적 · 컨센서스 (분기) <a href="#earn" data-go="earn" data-fin="${r.code}">재무 상세</a></h3>${e?`<div class="fin-grid"><div>${finChartFor(e,'quarter')}</div><div class="tablewrap"><table id="co-fin">${finTableFor({...e,code:r.code},'quarter')}</table></div></div>`:'<div class="empty">실적 데이터 없음</div>'}</div>

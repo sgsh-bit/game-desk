@@ -113,9 +113,12 @@ async function yahoo(sym) {
   if (out.price && out.target) out.upside = (out.target / out.price - 1) * 100;
   // returns from 1y daily closes
   try {
-    const end = new Date(); const start = new Date(end.getTime() - 400 * 86400000);
+    const end = new Date(); const start = new Date(end.getTime() - 1100 * 86400000);
     const ch = await yahooFinance.chart(sym, { period1: start, period2: end, interval: '1d' });
     const qs = (ch.quotes || []).filter(x => x.close != null);
+    // weekly closes for band charts (last close of each ISO week), ~150 points
+    const wk = new Map(); for (const x of qs) { const d = new Date(x.date); const k = `${d.getUTCFullYear()}-${String(Math.ceil(((d - new Date(Date.UTC(d.getUTCFullYear(), 0, 1))) / 86400000 + new Date(Date.UTC(d.getUTCFullYear(), 0, 1)).getUTCDay() + 1) / 7)).padStart(2, '0')}`; wk.set(k, [d.toISOString().slice(0, 10), Math.round(x.close * 100) / 100]); }
+    out.weekly = [...wk.values()];
     const last = qs[qs.length - 1]?.close;
     const at = (days) => { const t = end.getTime() - days * 86400000; let best = null; for (const x of qs) { if (new Date(x.date).getTime() <= t) best = x; } return best?.close; };
     const ytdBase = (() => { const y = end.getFullYear(); let best = null; for (const x of qs) { if (new Date(x.date).getFullYear() < y) best = x; } return best?.close; })();
@@ -148,6 +151,13 @@ for (const g of GLOBAL) {
 }
 function pick(o, keys) { const r = {}; for (const k of keys) if (o[k] !== undefined) r[k] = o[k]; return r; }
 
+// 주간 종가 히스토리 (밴드차트용) → data/history/prices.json
+{
+  const PP = path.join(ROOT, 'data', 'history', 'prices.json');
+  const prices = {};
+  for (const r of [...result.kr, ...result.global]) { if (r.weekly?.length) prices[r.code || r.sym] = r.weekly; delete r.weekly; }
+  if (Object.keys(prices).length) fs.writeFileSync(PP, JSON.stringify(prices) + '\n');
+}
 // 밸류에이션 일별 스냅샷 (주가·추정PER·PBR·목표가) → data/history/valuation.json (180일)
 {
   const HP = path.join(ROOT, 'data', 'history', 'valuation.json');
