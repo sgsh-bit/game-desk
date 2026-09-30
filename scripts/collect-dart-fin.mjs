@@ -57,11 +57,15 @@ for (const c of KR) {
   const cc = corp[c.code]; if (!cc) { summary.failures.push(`${c.code}: no corp_code`); continue; }
   const arch = (archive[c.code] = archive[c.code] || {});
   let got = 0;
-  for (let y = thisYear - 2; y <= thisYear; y++) {
-    const q1 = await fin(cc, y, '11013'); await sleep(250);
-    const h1 = await fin(cc, y, '11012'); await sleep(250);
-    const q3 = await fin(cc, y, '11014'); await sleep(250);
-    const fy = await fin(cc, y, '11011'); await sleep(250);
+  const have = k => arch[k] && (arch[k].src === 'dart' || arch[k].src === 'fn') && arch[k].rev != null;
+  const recentKeys = new Set([0, 1].map(i => { const d = new Date(); d.setUTCMonth(d.getUTCMonth() - 3 * i - 1); const q = Math.floor(d.getUTCMonth() / 3) * 3 + 3; return `${d.getUTCFullYear()}${String(q).padStart(2, '0')}`; }));
+  const firstRun = !Object.keys(arch).some(k => arch[k]?.src === 'dart');
+  for (let y = firstRun ? thisYear - 2 : thisYear - 1; y <= thisYear; y++) {
+    const need = k => firstRun || !have(k) || recentKeys.has(k);
+    const q1 = need(`${y}03`) ? await fin(cc, y, '11013') : null; if (q1) await sleep(250);
+    const h1 = need(`${y}06`) ? await fin(cc, y, '11012') : null; if (h1) await sleep(250);
+    const q3 = need(`${y}09`) || need(`${y}12`) ? await fin(cc, y, '11014') : null; if (q3) await sleep(250);
+    const fy = need(`${y}12`) ? await fin(cc, y, '11011') : null; if (fy) await sleep(250);
     const put = (key, rec) => { if (rec.rev == null && rec.op == null) return; const o = arch[key] || {}; for (const k of ['rev', 'op', 'np', 'npc']) if (rec[k] != null) o[k] = Math.round(rec[k] * 10) / 10; if (o.rev && o.op != null) o.opm = Math.round(o.op / o.rev * 10000) / 100; o.src = 'dart'; arch[key] = o; got++; };
     if (q1) put(`${y}03`, q1.cur);
     if (h1) put(`${y}06`, h1.cur);
