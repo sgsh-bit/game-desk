@@ -603,12 +603,25 @@ function recLabel(m,n){if(m==null)return '<span class="rec">–</span>';const t=
 
 /* ---------- 수급 ---------- */
 let market=null;
+/* ---------- 장중 주가 오버레이 (data/quotes.json, 10분 수집 · 5분 재조회) ---------- */
+let quotesAt=null;
+async function applyQuotes(){
+  if(!market)return false;
+  let q; try{q=await getJSON('data/quotes.json');}catch(e){return false;}
+  if(!q||q.generatedAt===quotesAt)return false;
+  quotesAt=q.generatedAt;
+  for(const r of market.kr||[]){const x=q.kr?.[r.code];if(!x||x.price==null)continue;if(r.mcap&&r.price)r.mcap=r.mcap*x.price/r.price;r.price=x.price;if(x.chgPct!=null)r.chgPct=x.chgPct;r.quoteAt=x.at;r.mktStatus=x.status;if(r.target)r.upside=(r.target/r.price-1)*100;}
+  for(const r of market.global||[]){const x=q.global?.[r.sym];if(!x||x.price==null)continue;if(r.mcap&&r.price)r.mcap=r.mcap*x.price/r.price;r.price=x.price;if(x.chgPct!=null)r.chgPct=x.chgPct;r.quoteAt=x.at;if(r.target)r.upside=(r.target/r.price-1)*100;}
+  market.quoteAt=q.generatedAt; return true;
+}
+function quoteStamp(){if(!market?.quoteAt)return '';const kr=(market.kr||[]).find(r=>r.quoteAt);const st=kr?.mktStatus;const lab=st&&/OPEN/i.test(st)?'장중':st&&/CLOSE/i.test(st)?'종가':'';return ' · 주가 '+fmtStamp(market.quoteAt)+(lab?' ('+lab+')':'');}
+
 function flowKRW(r,k,n){ // Σ 순매수 거래대금 over last n days (억원, KRX)
   if(!r.flows||!r.flows.length)return null; let s=0; for(const f of r.flows.slice(0,n)){ s+=(f[k]||0); } return s;
 }
 function renderFlow(){
   if(!market){return;}
-  $('#flow-stamp').textContent='기준 '+(market.kr.find(r=>r.asOf)?.asOf||'')+' · 수집 '+fmtStamp(market.generatedAt);
+  $('#flow-stamp').textContent='기준 '+(market.kr.find(r=>r.asOf)?.asOf||'')+' · 수집 '+fmtStamp(market.generatedAt)+quoteStamp();
   const rows=market.kr.map(r=>({r,f1:flowKRW(r,'frgn',1),f5:flowKRW(r,'frgn',5),f20:flowKRW(r,'frgn',20),i1:flowKRW(r,'inst',1),i5:flowKRW(r,'inst',5),i20:flowKRW(r,'inst',20)})).sort((a,b)=>(b.f5??-1e18)-(a.f5??-1e18));
   const tot=k=>rows.reduce((s,x)=>s+(x[k]||0),0);
   const top=rows[0], bot=rows[rows.length-1];
@@ -633,7 +646,7 @@ function renderValChips(){
 }
 function renderVal(){
   if(!market)return;
-  $('#val-stamp').textContent='수집 '+fmtStamp(market.generatedAt);
+  $('#val-stamp').textContent='수집 '+fmtStamp(market.generatedAt)+quoteStamp();
   const list=valFilter==='kr'?market.kr:market.global;
   const med=arr=>{const a=arr.filter(x=>x!=null&&isFinite(x)&&x>0).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:null;};
   const mF=med(list.map(r=>r.cnsPer??r.fwdPer)), mT=med(list.map(r=>r.per)), mB=med(list.map(r=>r.pbr)), mE=med(list.map(r=>r.evEbitda));
@@ -707,7 +720,7 @@ function renderCcu(d){
 
 (async()=>{
   try{valHist=await getJSON('data/history/valuation.json');}catch(e){}
-  try{market=await getJSON('data/market.json');renderFlow();renderVal();if(newsData)renderNews();}catch(e){$('#flow-body').innerHTML='<tr><td colspan="12" class="empty">수급 데이터가 아직 없습니다 (매 거래일 16:40 KST 수집).</td></tr>';$('#val-body').innerHTML='<tr><td colspan="15" class="empty">밸류에이션 데이터가 아직 없습니다.</td></tr>';}
+  try{market=await getJSON('data/market.json');await applyQuotes();renderFlow();renderVal();if(newsData)renderNews();setInterval(async()=>{if(await applyQuotes()){renderFlow();renderVal();if(typeof renderBrief==='function')renderBrief();if(typeof renderBand==='function')renderBand();if(coCode&&typeof renderCo==='function')renderCo();}},5*60000);}catch(e){$('#flow-body').innerHTML='<tr><td colspan="12" class="empty">수급 데이터가 아직 없습니다 (매 거래일 16:40 KST 수집).</td></tr>';$('#val-body').innerHTML='<tr><td colspan="15" class="empty">밸류에이션 데이터가 아직 없습니다.</td></tr>';}
   try{renderInd(await getJSON('data/kosis.json'));}catch(e){renderInd(null);}
   try{ccuData=await getJSON('data/steam_ccu.json');renderCcu(ccuData);}catch(e){renderCcu(null);}
 })();
@@ -1130,7 +1143,7 @@ function renderCo(){
   $('#co-card').innerHTML=`
   <div class="co-head"><div><h2>${esc(r.name)} <span class="pub" style="font-size:13px;font-weight:400">${r.code} · ${esc(r.sector)} · ${r.mkt==='KQ'?'KOSDAQ':'KOSPI'}</span></h2>
     <div><span class="px">${fmt.n(r.price)}</span> <span class="delta ${r.chgPct>=0?'up':'down'}" style="font-size:15px">${fmt.pct(r.chgPct,2)}</span></div>
-    <div class="meta">${ev?`다음 실적발표 ${ev.date.replace(/-/g,'.')} (${ev.conf})`:''} · 수급 기준 ${r.asOf||'–'} · 수집 ${fmtStamp(market.generatedAt)}</div></div>
+    <div class="meta">${ev?`다음 실적발표 ${ev.date.replace(/-/g,'.')} (${ev.conf})`:''} · 수급 기준 ${r.asOf||'–'} · 수집 ${fmtStamp(market.generatedAt)}${quoteStamp()}</div></div>
     <div class="range"><span>52주 ${fmt.n(r.lo52)}</span><div class="bar">${pos52!=null?`<i style="left:${Math.max(0,Math.min(100,pos52)).toFixed(1)}%"></i>`:''}</div><span>${fmt.n(r.hi52)}</span></div></div>
   <div class="kpis">
     <div class="kpi"><div class="l">외인 순매수 5일 / 20일</div><div class="v ${cls(sums.frgn5)}">${fmt.signed(sums.frgn5)}억</div><div class="d ${cls(sums.frgn20)}">20일 ${fmt.signed(sums.frgn20)}억</div></div>

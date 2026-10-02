@@ -1,0 +1,38 @@
+name: collect-quotes
+
+on:
+  schedule:
+    - cron: "*/10 0-6 * * 1-5"   # 09:00–15:50 KST 장중 10분 간격 (KRX)
+    - cron: "5 7 * * 1-5"        # 16:05 KST 종가 확정
+    - cron: "*/30 13-20 * * 1-5" # 미국 장중 30분 간격 (글로벌 피어)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: quotes
+  cancel-in-progress: true
+
+jobs:
+  quotes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Collect quotes
+        run: node scripts/collect-quotes.mjs
+      - name: Commit data
+        run: |
+          git config user.name "game-desk-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/quotes.json
+          if git diff --cached --quiet; then echo "no changes"; else
+            git commit -m "data: quotes $(date -u +'%Y-%m-%dT%H:%MZ')"
+            git pull --rebase -X theirs origin main || true
+            git push
+          fi
